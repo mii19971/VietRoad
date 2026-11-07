@@ -247,9 +247,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun saveFeature(code: String, s: DriveSnapshot, value: Int?) {
-        // Điểm gắn với hướng xe đang chạy (nếu có) để chỉ cảnh báo đúng chiều
-        FeatureDb.get(this).addUserFeature(code, s.lat, s.lng, s.heading, value)
-        DriveState.dataChanged()
-        Toast.makeText(this, getString(R.string.point_saved, SignCatalog.byCode[code]?.name), Toast.LENGTH_SHORT).show()
+        // Điểm gắn với hướng xe đang chạy (nếu có) để chỉ cảnh báo đúng chiều. Ghi CSDL ngoài luồng giao diện.
+        val db = FeatureDb.get(this)
+        Thread {
+            val saved = runCatching { db.addUserFeature(code, s.lat, s.lng, s.heading, value) }
+            runOnUiThread {
+                if (saved.isSuccess) {
+                    DriveState.dataChanged()
+                    Toast.makeText(this, getString(R.string.point_saved, SignCatalog.byCode[code]?.name), Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, getString(R.string.error_prefix, saved.exceptionOrNull()?.message), Toast.LENGTH_LONG).show()
+                }
+            }
+        }.start()
     }
 }

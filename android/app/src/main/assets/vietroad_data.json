@@ -3,6 +3,7 @@
  "note": "DỮ LIỆU MẪU — toạ độ gần đúng, chỉ dùng chạy thử. Thay bằng dữ liệu khảo sát thực tế trước khi phát hành.",
  "features": [
   {
+   "uid": "afe7d9ab-9ad9-32ef-93ac-72f59c620ff0",
    "type_code": "IE.452",
    "lat": 21.01351,
    "lng": 105.529693,
@@ -11,9 +12,15 @@
    "vehicles": "all",
    "road_name": "Đại lộ Thăng Long",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "9322bba5-d1d2-3972-82b8-3697ec56de75",
    "type_code": "P.127",
    "lat": 21.01342,
    "lng": 105.532385,
@@ -22,9 +29,15 @@
    "vehicles": "all",
    "road_name": "Đại lộ Thăng Long",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "bc759689-35a0-35f0-8e55-8e0bd516444e",
    "type_code": "P.127",
    "lat": 21.007446,
    "lng": 105.789731,
@@ -33,9 +46,15 @@
    "vehicles": "all",
    "road_name": "Đại lộ Thăng Long",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "46cd4b50-d2b8-3503-baf6-28335eb478d8",
    "type_code": "CAM_SPEED",
    "lat": 21.009423,
    "lng": 105.607697,
@@ -44,9 +63,15 @@
    "vehicles": "all",
    "road_name": "Đại lộ Thăng Long",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "be6dd3d6-c6fe-3f20-8237-a1cae4361bd2",
    "type_code": "CAM_SPEED",
    "lat": 21.004387,
    "lng": 105.674838,
@@ -55,9 +80,15 @@
    "vehicles": "all",
    "road_name": "Đại lộ Thăng Long",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "7e0d93f5-4432-3052-b214-012c2b861030",
    "type_code": "CAM_SPEED",
    "lat": 21.000714,
    "lng": 105.728572,
@@ -66,9 +97,15 @@
    "vehicles": "all",
    "road_name": "Đại lộ Thăng Long",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "4c26aad0-e65d-3f6a-846d-3918f5d92b79",
    "type_code": "BLACKSPOT",
    "lat": 21.006401,
    "lng": 105.647982,
@@ -77,9 +114,15 @@
    "vehicles": "all",
    "road_name": "Đại lộ Thăng Long",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "14677ed3-a129-3970-84be-71eca8d08afe",
    "type_code": "W.201b",
    "lat": 21.002401,
    "lng": 105.763337,
@@ -88,9 +131,15 @@
    "vehicles": "all",
    "road_name": "Đại lộ Thăng Long",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "3420dfb4-57f7-3a80-82ef-16f9afdbe393",
    "type_code": "CAM_MOBILE",
    "lat": 21.002373,
    "lng": 105.701694,
@@ -99,9 +148,15 @@
    "vehicles": "all",
    "road_name": "Đại lộ Thăng Long",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "9447c4cf-7f01-3dfc-b08b-74fe09c7067b",
    "type_code": "W.227",
    "lat": 21.011535,
    "lng": 105.575444,
@@ -110,9 +165,15 @@
    "vehicles": "all",
    "road_name": "Đại lộ Thăng Long",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "4fc58a13-cebe-35b2-9635-bc94486d4a0a",
    "type_code": "TOLL",
    "lat": 21.004812,
    "lng": 105.776558,
@@ -121,9 +182,15 @@
    "vehicles": "all",
    "road_name": "Đại lộ Thăng Long",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "ce652fb5-36fa-3d49-b84e-7d2603924198",
    "type_code": "IE.452",
    "lat": 10.790167,
    "lng": 106.778798,
@@ -132,9 +199,15 @@
    "vehicles": "all",
    "road_name": "Cao tốc TP.HCM – Long Thành – Dầu Giây",
    "province": "TP. Hồ Chí Minh",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "36d7c158-7fc7-3d41-8494-8df8e1c67def",
    "type_code": "P.127",
    "lat": 10.789834,
    "lng": 106.783596,
@@ -143,9 +216,15 @@
    "vehicles": "all",
    "road_name": "Cao tốc TP.HCM – Long Thành – Dầu Giây",
    "province": "TP. Hồ Chí Minh",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "42895cfc-9f4b-3246-ae6f-ae73595c549a",
    "type_code": "P.127",
    "lat": 10.923713,
    "lng": 107.192815,
@@ -154,9 +233,15 @@
    "vehicles": "all",
    "road_name": "Cao tốc TP.HCM – Long Thành – Dầu Giây",
    "province": "TP. Hồ Chí Minh",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "68f5d9c8-0ac9-3d00-9367-10fb9fd87109",
    "type_code": "CAM_SPEED",
    "lat": 10.774817,
    "lng": 106.868592,
@@ -165,9 +250,15 @@
    "vehicles": "all",
    "road_name": "Cao tốc TP.HCM – Long Thành – Dầu Giây",
    "province": "TP. Hồ Chí Minh",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "b2b21189-ad47-3deb-aea5-adc000203fa9",
    "type_code": "CAM_SPEED",
    "lat": 10.791086,
    "lng": 107.006628,
@@ -176,9 +267,15 @@
    "vehicles": "all",
    "road_name": "Cao tốc TP.HCM – Long Thành – Dầu Giây",
    "province": "TP. Hồ Chí Minh",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "584cd90a-287e-31bd-b78f-05bec938de4e",
    "type_code": "CAM_SPEED",
    "lat": 10.867132,
    "lng": 107.128151,
@@ -187,9 +284,15 @@
    "vehicles": "all",
    "road_name": "Cao tốc TP.HCM – Long Thành – Dầu Giây",
    "province": "TP. Hồ Chí Minh",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "88158bbc-bf6b-3298-9afb-551e05033b71",
    "type_code": "TOLL",
    "lat": 10.773216,
    "lng": 106.962862,
@@ -198,9 +301,15 @@
    "vehicles": "all",
    "road_name": "Cao tốc TP.HCM – Long Thành – Dầu Giây",
    "province": "TP. Hồ Chí Minh",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "feab2095-f401-3415-86d1-6ceee3d88afe",
    "type_code": "REST",
    "lat": 10.81762,
    "lng": 107.046429,
@@ -209,9 +318,15 @@
    "vehicles": "all",
    "road_name": "Cao tốc TP.HCM – Long Thành – Dầu Giây",
    "province": "TP. Hồ Chí Minh",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "c764a5fb-d63e-332b-a2d2-54f49e6fcfb9",
    "type_code": "IE.453",
    "lat": 10.92057,
    "lng": 107.189223,
@@ -220,9 +335,15 @@
    "vehicles": "all",
    "road_name": "Cao tốc TP.HCM – Long Thành – Dầu Giây",
    "province": "TP. Hồ Chí Minh",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "14e60416-6881-3f40-9663-fa4e94f4e2aa",
    "type_code": "W.227",
    "lat": 10.84163,
    "lng": 107.087852,
@@ -231,9 +352,15 @@
    "vehicles": "all",
    "road_name": "Cao tốc TP.HCM – Long Thành – Dầu Giây",
    "province": "TP. Hồ Chí Minh",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "8b041f77-46f2-35d5-a44b-d7fea96e59c6",
    "type_code": "P.127",
    "lat": 21.024427,
    "lng": 105.803613,
@@ -242,9 +369,15 @@
    "vehicles": "all",
    "road_name": "Đường Láng",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "590c74af-de39-3796-920d-7fae24659e58",
    "type_code": "W.225",
    "lat": 21.019063,
    "lng": 105.806678,
@@ -253,9 +386,15 @@
    "vehicles": "all",
    "road_name": "Đường Láng",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "b17ed73c-4132-3b3b-b878-990820bdf429",
    "type_code": "CAM_REDLIGHT",
    "lat": 21.014542,
    "lng": 105.808583,
@@ -264,9 +403,15 @@
    "vehicles": "all",
    "road_name": "Đường Láng",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "a22831e2-411b-38ce-b355-fc309e5db488",
    "type_code": "CAM_REDLIGHT",
    "lat": 21.014086,
    "lng": 105.808766,
@@ -275,9 +420,15 @@
    "vehicles": "all",
    "road_name": "Đường Láng",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "f390c1fa-35f1-3cd2-916d-8a8d9d5e9d58",
    "type_code": "P.123a",
    "lat": 21.010031,
    "lng": 105.810517,
@@ -286,9 +437,15 @@
    "vehicles": "all",
    "road_name": "Đường Láng",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "be5885c4-064d-316c-aa49-dd6866bf42a8",
    "type_code": "P.131a",
    "lat": 21.006765,
    "lng": 105.812259,
@@ -297,9 +454,15 @@
    "vehicles": "all",
    "road_name": "Đường Láng",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "e03eadd1-44f5-31d9-98c9-9843e5d38ec5",
    "type_code": "P.106a",
    "lat": 21.023354,
    "lng": 105.804226,
@@ -308,9 +471,15 @@
    "vehicles": "truck",
    "road_name": "Đường Láng",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "b64bde23-a294-3121-8857-7e110a4eca21",
    "type_code": "P.127",
    "lat": 16.078224,
    "lng": 108.217673,
@@ -319,9 +488,15 @@
    "vehicles": "all",
    "road_name": "Đường Nguyễn Tất Thành",
    "province": "Đà Nẵng",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "20b6ff8a-cb42-3134-81e8-5e14590cabc1",
    "type_code": "CAM_TRAFFIC",
    "lat": 16.070769,
    "lng": 108.196921,
@@ -330,9 +505,15 @@
    "vehicles": "all",
    "road_name": "Đường Nguyễn Tất Thành",
    "province": "Đà Nẵng",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "07326045-35c7-37ac-9c07-c32336f3fb4e",
    "type_code": "FLOOD",
    "lat": 16.066554,
    "lng": 108.188108,
@@ -341,9 +522,15 @@
    "vehicles": "all",
    "road_name": "Đường Nguyễn Tất Thành",
    "province": "Đà Nẵng",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "9b3b39cc-031d-33cb-855d-837d3b2d4ae2",
    "type_code": "W.224",
    "lat": 16.074346,
    "lng": 108.206039,
@@ -352,9 +539,15 @@
    "vehicles": "all",
    "road_name": "Đường Nguyễn Tất Thành",
    "province": "Đà Nẵng",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "b00bd4ec-b9b8-321c-99c0-9eb4023f85b5",
    "type_code": "CAM_REDLIGHT",
    "lat": 21.0285,
    "lng": 105.852,
@@ -363,9 +556,15 @@
    "vehicles": "all",
    "road_name": "Đinh Tiên Hoàng",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "bc7ba5e4-e55d-3d33-8b31-b5829b1c5e39",
    "type_code": "P.102",
    "lat": 21.03,
    "lng": 105.848,
@@ -374,9 +573,15 @@
    "vehicles": "all",
    "road_name": "Hàng Bông",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "10bb08a5-5690-3b7e-b3e9-9ecc1b71c1ed",
    "type_code": "P.124a",
    "lat": 21.0175,
    "lng": 105.8425,
@@ -385,9 +590,15 @@
    "vehicles": "all",
    "road_name": "Tôn Đức Thắng",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "a9d4c2d5-0157-369a-8767-09399b920308",
    "type_code": "W.210",
    "lat": 21.0153,
    "lng": 105.8414,
@@ -396,9 +607,15 @@
    "vehicles": "all",
    "road_name": "Lê Duẩn",
    "province": "Hà Nội",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "1c7b2cbc-d82f-36b1-a49e-385172994534",
    "type_code": "CAM_REDLIGHT",
    "lat": 10.7769,
    "lng": 106.7009,
@@ -407,9 +624,15 @@
    "vehicles": "all",
    "road_name": "Lê Duẩn – Pasteur",
    "province": "TP. Hồ Chí Minh",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "c6c60988-06e8-3676-ae0d-5b9d94b64431",
    "type_code": "P.123b",
    "lat": 10.7727,
    "lng": 106.6981,
@@ -418,9 +641,15 @@
    "vehicles": "all",
    "road_name": "Nguyễn Thị Minh Khai",
    "province": "TP. Hồ Chí Minh",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "52c50615-9283-3f53-b740-cd4ac075204a",
    "type_code": "BLACKSPOT",
    "lat": 10.8491,
    "lng": 106.7724,
@@ -429,9 +658,15 @@
    "vehicles": "all",
    "road_name": "Ngã tư Thủ Đức",
    "province": "TP. Hồ Chí Minh",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "e13c2923-7d7c-3bfc-8b0b-b1c464443ae7",
    "type_code": "FLOOD",
    "lat": 10.8012,
    "lng": 106.7135,
@@ -440,9 +675,15 @@
    "vehicles": "all",
    "road_name": "Nguyễn Hữu Cảnh",
    "province": "TP. Hồ Chí Minh",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "6dcfde46-a615-36ef-8488-3329d0345312",
    "type_code": "P.117",
    "lat": 10.7905,
    "lng": 106.7128,
@@ -451,11 +692,17 @@
    "vehicles": "all",
    "road_name": "Cầu Sài Gòn",
    "province": "TP. Hồ Chí Minh",
-   "note": "Dữ liệu mẫu"
+   "note": "Dữ liệu mẫu",
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   }
  ],
  "zones": [
   {
+   "uid": "d9c3b33b-bd37-3cb4-835b-541316bd228c",
    "name": "Đại lộ Thăng Long",
    "points": [
     [
@@ -497,9 +744,15 @@
    ],
    "max_speed_car": 100,
    "max_speed_truck": 90,
-   "oneway": false
+   "oneway": false,
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "42effafc-e9b8-3b82-b3e5-eeed1981c2eb",
    "name": "Cao tốc TP.HCM – Long Thành – Dầu Giây",
    "points": [
     [
@@ -541,9 +794,15 @@
    ],
    "max_speed_car": 100,
    "max_speed_truck": 90,
-   "oneway": false
+   "oneway": false,
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "470a6a14-a7c2-3743-b0eb-ae6e01da4f8b",
    "name": "Đường Láng",
    "points": [
     [
@@ -565,9 +824,15 @@
    ],
    "max_speed_car": 50,
    "max_speed_truck": 50,
-   "oneway": false
+   "oneway": false,
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   },
   {
+   "uid": "230373b6-fcee-3920-80e7-dbbc22bbc039",
    "name": "Đường Nguyễn Tất Thành",
    "points": [
     [
@@ -589,7 +854,12 @@
    ],
    "max_speed_car": 60,
    "max_speed_truck": 50,
-   "oneway": false
+   "oneway": false,
+   "data_source": "sample",
+   "confidence": 0.2,
+   "verified_at": null,
+   "expires_at": null,
+   "status": "active"
   }
  ]
 }

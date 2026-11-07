@@ -58,21 +58,39 @@ Có 2 cách thay dữ liệu:
 ```json
 {
   "features": [
-    { "type_code": "CAM_SPEED", "lat": 21.0123, "lng": 105.6, "heading": 92,
-      "speed_limit": null, "vehicles": "all", "road_name": "Đại lộ Thăng Long", "province": "Hà Nội" },
+    { "uid": "3f1c2a9e-0b7d-4c5e-9a41-2d8f6e1b7c30",
+      "type_code": "CAM_SPEED", "lat": 21.0123, "lng": 105.6, "heading": 92,
+      "speed_limit": null, "vehicles": "all", "road_name": "Đại lộ Thăng Long", "province": "Hà Nội",
+      "data_source": "survey-2025-hn", "confidence": 0.9, "verified_at": "2025-03-01",
+      "expires_at": null, "status": "active" },
     { "type_code": "P.127", "lat": 21.0134, "lng": 105.53, "heading": 92, "speed_limit": 100 }
   ],
   "zones": [
-    { "name": "Đại lộ Thăng Long", "points": [[21.0136, 105.527], [21.0125, 105.56]],
-      "max_speed_car": 100, "max_speed_truck": 90, "oneway": false }
+    { "uid": "8a0d4e2b-6c1f-4b9a-b3e7-5f2c9d8a1e46",
+      "name": "Đại lộ Thăng Long", "points": [[21.0136, 105.527], [21.0125, 105.56]],
+      "max_speed_car": 100, "max_speed_truck": 90, "oneway": false,
+      "data_source": "osm", "confidence": 0.6, "verified_at": null, "status": "active" }
   ]
 }
 ```
 
 - `heading`: hướng xe đi tới mà biển có hiệu lực (0 = Bắc, 90 = Đông, 180 = Nam, 270 = Tây). Để `null` nếu biển áp dụng cho mọi hướng.
 - `vehicles`: `all` hoặc danh sách `car,truck,bus,motorbike`.
-- Ứng dụng cũng nhận **GeoJSON** FeatureCollection: mỗi `Point` là một điểm cảnh báo, mỗi `LineString` có `max_speed_car` là một đoạn tốc độ.
-- Danh sách mã `type_code` hợp lệ: xem `data/SignCatalog.kt`. Bản ghi có mã lạ hoặc toạ độ sai sẽ bị bỏ qua và được đếm vào số "bỏ qua".
+- Ứng dụng cũng nhận **GeoJSON** FeatureCollection: mỗi `Point` là một điểm cảnh báo, mỗi `LineString` có `max_speed_car` là một đoạn tốc độ. `id` của Feature được dùng làm `uid`.
+- Danh sách mã `type_code` hợp lệ: xem `data/SignCatalog.kt`. Bản ghi có mã lạ, toạ độ sai hoặc trường quản lý sai định dạng sẽ bị bỏ qua và được đếm vào số "bỏ qua".
+
+#### Trường quản lý dữ liệu (tuỳ chọn, dùng chung cho `features` và `zones`)
+
+| Trường | Ý nghĩa | Mặc định nếu thiếu |
+|---|---|---|
+| `uid` | Mã định danh duy nhất (tối đa 64 ký tự, nên dùng UUID). Nhập bản ghi có `uid` đã tồn tại sẽ **cập nhật** bản ghi đó thay vì thêm mới. | Mã ổn định sinh từ loại + toạ độ + hướng (vùng: tên + điểm đầu/cuối) |
+| `data_source` | Nguồn dữ liệu, ví dụ `osm`, `survey-2025-hn`, `partner-x`, `user` | `null` (không rõ) |
+| `confidence` | Mức độ tin cậy, từ 0 đến 1 | `0.5` |
+| `verified_at` | Ngày xác minh: `"2025-03-01"`, `"2025-03-01T08:00:00Z"` hoặc số giây/mili giây epoch (giờ UTC) | `null` (chưa xác minh) |
+| `expires_at` | Hết hiệu lực kể từ thời điểm này, cùng định dạng với `verified_at` | `null` (không hết hạn) |
+| `status` | `active`: đang cảnh báo · `pending`: chờ xác minh, chưa cảnh báo · `inactive`: đã gỡ | `active` |
+
+Chỉ bản ghi `status = active` và chưa tới `expires_at` mới được dùng để cảnh báo. Để gỡ một điểm trên box, hãy nhập lại bản ghi đó (cùng `uid`) với `"status": "inactive"`. Dữ liệu mẫu đi kèm app có `data_source = "sample"` và `confidence = 0.2`.
 
 ## Cấu trúc mã
 

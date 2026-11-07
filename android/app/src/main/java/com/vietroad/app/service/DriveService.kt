@@ -16,6 +16,7 @@ import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Looper
 import android.os.SystemClock
@@ -50,12 +51,21 @@ class DriveService : Service(), LocationListener {
     private lateinit var locationManager: LocationManager
     private val handler = Handler(Looper.getMainLooper())
 
-    // Bộ đệm dữ liệu quanh xe, nạp lại khi xe đi xa tâm bộ đệm
+    /** Mọi thao tác SQLite chạy trên luồng riêng để GPS/giao diện không bị giật trên box yếu. */
+    private val dbThread = HandlerThread("vietroad-db")
+    private lateinit var dbHandler: Handler
+
+    // Bộ đệm dữ liệu quanh xe, nạp lại (trên luồng DB) khi xe đi xa tâm bộ đệm
     private var cacheFeatures: List<RoadFeature> = emptyList()
     private var cacheZones: List<SpeedZone> = emptyList()
     private var cacheLat = Double.NaN
     private var cacheLng = Double.NaN
     private var cacheVersion = -1
+    private var cacheLoadedAt = 0L
+    private var cacheLoading = false
+
+    /** Tăng mỗi lần đổi chế độ GPS ↔ mô phỏng, để bỏ kết quả nạp tuyến mô phỏng đã lỗi thời */
+    private var modeToken = 0
 
     // Trạng thái hành trình
     private var lastSignLimit: Int? = null
@@ -89,7 +99,9 @@ class DriveService : Service(), LocationListener {
         overlay = OverlayBubble(this)
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         createChannel()
-        db.pruneEvents()
+        dbThread.start()
+        dbHandler = Handler(dbThread.looper)
+        onDb("dọn nhật ký cũ") { db.pruneEvents() }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -115,6 +127,7 @@ class DriveService : Service(), LocationListener {
         stopSimulation()
         locationManager.removeUpdates(this)
         handler.removeCallbacksAndMessages(null)
+        dbThread.quitSafely() // ghi nốt nhật ký đang chờ rồi dừng
         overlay.hide()
         announcer.shutdown()
         lastSnapshot?.let { DriveState.publish(it.copy(running = false, simulating = false)) }
@@ -127,6 +140,7 @@ class DriveService : Service(), LocationListener {
         ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
     private fun startGps() {
+        modeToken++
         stopSimulation()
         resetTrip()
         try {
@@ -182,7 +196,16 @@ class DriveService : Service(), LocationListener {
 
     private fun startSimulation() {
         locationManager.removeUpdates(this)
-        val zone = db.longestZone()
+        stopSimulation()
+        val token = ++modeToken
+        dbHandler.post {
+            // Lỗi đọc CSDL → zone = null → quay về chạy GPS
+            val zone = runCatching { db.longestZone() }.onFailure { Log.e(TAG, "Không nạp được tuyến mô phỏng", it) }.getOrNull()
+            handler.post { if (token == modeToken && isRunning) beginSimulation(zone) }
+        }
+    }
+
+    private fun beginSimulation(zone: SpeedZone?) {
         if (zone == null) {
             announcer.speak("Không có dữ liệu tuyến đường để mô phỏng")
             startGps()
@@ -239,16 +262,46 @@ class DriveService : Service(), LocationListener {
         announcer.reset()
     }
 
+    /**
+     * Nạp lại bộ đệm trên luồng DB khi: chưa có, dữ liệu vừa đổi, xe đi xa tâm bộ đệm,
+     * hoặc đã quá CACHE_MAX_AGE (để điểm vừa hết hạn không còn bị cảnh báo).
+     * Trong lúc nạp vẫn dùng bộ đệm cũ.
+     */
     private fun refreshCache(lat: Double, lng: Double) {
+        if (cacheLoading) return
+        val now = SystemClock.elapsedRealtime()
+        val version = DriveState.dataVersion
         val stale = cacheLat.isNaN() ||
-            cacheVersion != DriveState.dataVersion ||
+            cacheVersion != version ||
+            now - cacheLoadedAt > CACHE_MAX_AGE ||
             Geo.distance(cacheLat, cacheLng, lat, lng) > CACHE_RADIUS - CACHE_MARGIN
         if (!stale) return
-        cacheFeatures = db.featuresNear(lat, lng, CACHE_RADIUS)
-        cacheZones = db.zonesNear(lat, lng, CACHE_RADIUS)
-        cacheLat = lat
-        cacheLng = lng
-        cacheVersion = DriveState.dataVersion
+        cacheLoading = true
+        dbHandler.post {
+            val loaded = runCatching { db.featuresNear(lat, lng, CACHE_RADIUS) to db.zonesNear(lat, lng, CACHE_RADIUS) }
+            handler.post {
+                cacheLoading = false
+                loaded.onSuccess { (features, zones) ->
+                    cacheFeatures = features
+                    cacheZones = zones
+                    cacheLat = lat
+                    cacheLng = lng
+                    cacheVersion = version
+                    cacheLoadedAt = now
+                }.onFailure { Log.e(TAG, "Không nạp được dữ liệu quanh xe", it) }
+            }
+        }
+    }
+
+    /** Chạy [work] trên luồng DB; lỗi chỉ ghi log, không làm sập service. */
+    private fun onDb(what: String, work: () -> Unit) {
+        dbHandler.post {
+            try {
+                work()
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "Lỗi CSDL khi $what", e)
+            }
+        }
     }
 
     private fun process(lat: Double, lng: Double, speed: Double, heading: Double?) {
@@ -290,14 +343,16 @@ class DriveService : Service(), LocationListener {
     private fun logEvents(r: EngineResult, lat: Double, lng: Double, speed: Double) {
         if (r.overspeed && !wasOverspeed) {
             overspeedCount++
-            db.logEvent("overspeed", null, null, lat, lng, speed, r.speedLimit)
+            val limit = r.speedLimit
+            onDb("ghi nhật ký") { db.logEvent("overspeed", null, null, lat, lng, speed, limit) }
         }
         wasOverspeed = r.overspeed
         val now = SystemClock.elapsedRealtime()
         for (w in r.warnings) {
             val seen = loggedWarnings[w.feature.id]
             if (seen == null || now - seen > 10 * 60_000) {
-                db.logEvent("warning", w.feature.typeCode, w.feature.id, lat, lng, speed, w.feature.speedLimit)
+                val f = w.feature
+                onDb("ghi nhật ký") { db.logEvent("warning", f.typeCode, f.id, lat, lng, speed, f.speedLimit) }
             }
             loggedWarnings[w.feature.id] = now
         }
@@ -377,6 +432,7 @@ class DriveService : Service(), LocationListener {
         private const val NOTIF_ID = 1
         private const val CACHE_RADIUS = 3000.0
         private const val CACHE_MARGIN = 1500.0
+        private const val CACHE_MAX_AGE = 10 * 60_000L
 
         @Volatile var isRunning = false
             private set

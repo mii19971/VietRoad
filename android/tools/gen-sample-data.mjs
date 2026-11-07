@@ -4,9 +4,28 @@
 // CẢNH BÁO: toạ độ tuyến đường chỉ là gần đúng, dùng để chạy thử / mô phỏng.
 // Trước khi phát hành phải thay bằng dữ liệu khảo sát thực tế (cùng định dạng JSON).
 
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+// Giống java.util.UUID.nameUUIDFromBytes (MD5, phiên bản 3) — phải khớp DataFields.featureUid/zoneUid trong app
+function nameUuid(key) {
+  const b = crypto.createHash('md5').update(key, 'utf8').digest();
+  b[6] = (b[6] & 0x0f) | 0x30;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = b.toString('hex');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+const featureUid = (code, lat, lng, heading) =>
+  nameUuid(`f|${code}|${lat.toFixed(6)}|${lng.toFixed(6)}|${heading == null ? '' : Math.round(heading)}`);
+const zoneUid = (name, pts) => {
+  const [a, b] = [pts[0], pts[pts.length - 1]];
+  return nameUuid(`z|${name ?? ''}|${a[0].toFixed(6)}|${a[1].toFixed(6)}|${b[0].toFixed(6)}|${b[1].toFixed(6)}`);
+};
+
+// Dữ liệu mẫu: chưa xác minh, độ tin cậy thấp
+const SAMPLE_META = { data_source: 'sample', confidence: 0.2, verified_at: null, expires_at: null, status: 'active' };
 
 const toRad = (d) => (d * Math.PI) / 180;
 function distance(lat1, lng1, lat2, lng2) {
@@ -86,24 +105,36 @@ const SINGLES = [
 const features = [];
 const zones = [];
 for (const r of ROUTES) {
-  zones.push({ name: r.name, points: r.points, max_speed_car: r.car, max_speed_truck: r.truck, oneway: false });
+  zones.push({
+    uid: zoneUid(r.name, r.points),
+    name: r.name, points: r.points, max_speed_car: r.car, max_speed_truck: r.truck, oneway: false, ...SAMPLE_META,
+  });
   for (const [code, frac, dir] of r.features) {
     const p = pointAlong(r.points, frac);
+    const lat = +p.lat.toFixed(6);
+    const lng = +p.lng.toFixed(6);
+    const heading = dir === 'both' ? null : Math.round(dir === 'fwd' ? p.bearing : (p.bearing + 180) % 360);
     features.push({
+      uid: featureUid(code, lat, lng, heading),
       type_code: code,
-      lat: +p.lat.toFixed(6),
-      lng: +p.lng.toFixed(6),
-      heading: dir === 'both' ? null : Math.round(dir === 'fwd' ? p.bearing : (p.bearing + 180) % 360),
+      lat,
+      lng,
+      heading,
       speed_limit: code === 'P.127' ? r.car : null,
       vehicles: code === 'P.106a' ? 'truck' : 'all',
       road_name: r.name,
       province: r.province,
       note: 'Dữ liệu mẫu',
+      ...SAMPLE_META,
     });
   }
 }
 for (const [code, lat, lng, heading, road, province] of SINGLES) {
-  features.push({ type_code: code, lat, lng, heading, speed_limit: null, vehicles: 'all', road_name: road, province, note: 'Dữ liệu mẫu' });
+  features.push({
+    uid: featureUid(code, lat, lng, heading),
+    type_code: code, lat, lng, heading, speed_limit: null, vehicles: 'all', road_name: road, province, note: 'Dữ liệu mẫu',
+    ...SAMPLE_META,
+  });
 }
 
 const out = {

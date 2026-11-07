@@ -9,13 +9,14 @@ import com.vietroad.app.engine.Geo
 import com.vietroad.app.engine.RoadFeature
 import com.vietroad.app.engine.SpeedZone
 import org.json.JSONArray
+import org.json.JSONException
 
 /**
  * CSDL SQLite nằm ngay trên thiết bị — toàn bộ cảnh báo chạy offline.
  * Lần đầu mở, dữ liệu gốc được nạp từ assets/vietroad_data.json.
  */
 class FeatureDb private constructor(private val context: Context) :
-    SQLiteOpenHelper(context, "vietroad.db", null, 1) {
+    SQLiteOpenHelper(context, "vietroad.db", null, DB_VERSION) {
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
@@ -29,7 +30,8 @@ class FeatureDb private constructor(private val context: Context) :
                 vehicles TEXT NOT NULL DEFAULT 'all',
                 road_name TEXT, province TEXT, note TEXT,
                 source TEXT NOT NULL DEFAULT 'bundled',
-                created_at INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000))""",
+                created_at INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
+                $META_COLUMNS)""",
         )
         db.execSQL("CREATE INDEX idx_features_tile ON features(tile_y, tile_x)")
         db.execSQL(
@@ -39,7 +41,8 @@ class FeatureDb private constructor(private val context: Context) :
                 points TEXT NOT NULL,
                 min_lat REAL NOT NULL, min_lng REAL NOT NULL, max_lat REAL NOT NULL, max_lng REAL NOT NULL,
                 max_speed_car INTEGER NOT NULL, max_speed_truck INTEGER,
-                oneway INTEGER NOT NULL DEFAULT 0)""",
+                oneway INTEGER NOT NULL DEFAULT 0,
+                $META_COLUMNS)""",
         )
         db.execSQL("CREATE INDEX idx_zones_bbox ON zones(min_lat, max_lat)")
         db.execSQL(
@@ -51,10 +54,78 @@ class FeatureDb private constructor(private val context: Context) :
                 ts INTEGER NOT NULL)""",
         )
         db.execSQL("CREATE INDEX idx_events_ts ON events(ts)")
+        createUidIndexes(db)
         loadBundled(db)
     }
 
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+    /** SQLiteOpenHelper tự bọc onUpgrade trong một transaction. */
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        if (oldVersion < 2) migrateToV2(db)
+    }
+
+    /**
+     * v1 → v2: thêm mã định danh, nguồn, độ tin cậy, ngày xác minh, hạn hiệu lực, trạng thái.
+     * Bản ghi cũ: điểm gốc/nhập nhận mã ổn định theo loại + toạ độ + hướng; điểm tài xế tự thêm nhận mã ngẫu nhiên.
+     */
+    private fun migrateToV2(db: SQLiteDatabase) {
+        for (table in listOf("features", "zones")) {
+            META_COLUMNS.split(',').map { it.trim() }.forEach { db.execSQL("ALTER TABLE $table ADD COLUMN $it") }
+        }
+        val now = System.currentTimeMillis()
+        val used = HashSet<String>()
+        fun unique(uid: String) = if (used.add(uid)) uid else DataFields.randomUid().also { used.add(it) }
+
+        // Đọc hết rồi mới UPDATE, tránh vừa duyệt cursor vừa ghi cùng bảng
+        val featureUids = db.rawQuery("SELECT id, type_code, lat, lng, heading, source FROM features", null).use { c ->
+            buildList {
+                while (c.moveToNext()) {
+                    val uid = if (c.getString(5) == "user") {
+                        DataFields.randomUid()
+                    } else {
+                        DataFields.featureUid(c.getString(1), c.getDouble(2), c.getDouble(3), if (c.isNull(4)) null else c.getDouble(4))
+                    }
+                    add(c.getLong(0) to unique(uid))
+                }
+            }
+        }
+        featureUids.forEach { (id, uid) ->
+            db.execSQL("UPDATE features SET uid = ?, updated_at = ? WHERE id = ?", arrayOf<Any>(uid, now, id))
+        }
+        db.execSQL(
+            "UPDATE features SET data_source = 'user', confidence = ? WHERE source = 'user'",
+            arrayOf<Any>(DataFields.USER_CONFIDENCE),
+        )
+
+        used.clear()
+        val zoneUids = db.rawQuery("SELECT id, name, points FROM zones", null).use { c ->
+            buildList {
+                while (c.moveToNext()) {
+                    val pts = try { JSONArray(c.getString(2)) } catch (e: JSONException) { JSONArray() }
+                    val uid = if (pts.length() < 2) {
+                        DataFields.randomUid()
+                    } else {
+                        val a = pts.getJSONArray(0)
+                        val b = pts.getJSONArray(pts.length() - 1)
+                        DataFields.zoneUid(
+                            c.getString(1),
+                            doubleArrayOf(a.getDouble(0), a.getDouble(1)),
+                            doubleArrayOf(b.getDouble(0), b.getDouble(1)),
+                        )
+                    }
+                    add(c.getLong(0) to unique(uid))
+                }
+            }
+        }
+        zoneUids.forEach { (id, uid) ->
+            db.execSQL("UPDATE zones SET uid = ?, updated_at = ? WHERE id = ?", arrayOf<Any>(uid, now, id))
+        }
+        createUidIndexes(db)
+    }
+
+    private fun createUidIndexes(db: SQLiteDatabase) {
+        db.execSQL("CREATE UNIQUE INDEX idx_features_uid ON features(uid)")
+        db.execSQL("CREATE UNIQUE INDEX idx_zones_uid ON zones(uid)")
+    }
 
     private fun loadBundled(db: SQLiteDatabase): DataIO.Result {
         val json = context.assets.open(BUNDLED_FILE).bufferedReader(Charsets.UTF_8).use { it.readText() }
@@ -67,28 +138,30 @@ class FeatureDb private constructor(private val context: Context) :
         val (dLat, dLng) = Geo.degreeSpan(lat, radius)
         val args = arrayOf(
             Geo.tileY(lat - dLat), Geo.tileY(lat + dLat), Geo.tileX(lng - dLng), Geo.tileX(lng + dLng),
-            lat - dLat, lat + dLat, lng - dLng, lng + dLng,
+            lat - dLat, lat + dLat, lng - dLng, lng + dLng, System.currentTimeMillis(),
         ).map { it.toString() }.toTypedArray()
         return readableDatabase.rawQuery(
             """SELECT $FEATURE_COLS FROM features
                WHERE tile_y BETWEEN ? AND ? AND tile_x BETWEEN ? AND ?
-                 AND lat BETWEEN ? AND ? AND lng BETWEEN ? AND ?""",
+                 AND lat BETWEEN ? AND ? AND lng BETWEEN ? AND ?
+                 AND $IN_EFFECT""",
             args,
         ).use { c -> buildList { while (c.moveToNext()) add(readFeature(c)) } }
     }
 
     fun zonesNear(lat: Double, lng: Double, radius: Double): List<SpeedZone> {
         val (dLat, dLng) = Geo.degreeSpan(lat, radius)
-        val args = arrayOf(lat - dLat, lat + dLat, lng - dLng, lng + dLng).map { it.toString() }.toTypedArray()
+        val args = arrayOf(lat - dLat, lat + dLat, lng - dLng, lng + dLng, System.currentTimeMillis())
+            .map { it.toString() }.toTypedArray()
         return readableDatabase.rawQuery(
-            "SELECT * FROM zones WHERE max_lat >= ? AND min_lat <= ? AND max_lng >= ? AND min_lng <= ?",
+            "SELECT * FROM zones WHERE max_lat >= ? AND min_lat <= ? AND max_lng >= ? AND min_lng <= ? AND $IN_EFFECT",
             args,
         ).use { c -> buildList { while (c.moveToNext()) add(readZone(c)) } }
     }
 
     /** Vùng tốc độ dài nhất — dùng làm lộ trình cho chế độ mô phỏng. */
     fun longestZone(): SpeedZone? =
-        readableDatabase.rawQuery("SELECT * FROM zones", null).use { c ->
+        readableDatabase.rawQuery("SELECT * FROM zones WHERE $IN_EFFECT", arrayOf(System.currentTimeMillis().toString())).use { c ->
             buildList { while (c.moveToNext()) add(readZone(c)) }
         }.maxByOrNull { Geo.polylineLength(it.points) }
 
@@ -106,6 +179,11 @@ class FeatureDb private constructor(private val context: Context) :
             if (speedLimit == null) putNull("speed_limit") else put("speed_limit", speedLimit)
             put("source", "user")
             put("note", "Tài xế thêm trên thiết bị")
+            put("uid", DataFields.randomUid())
+            put("data_source", "user")
+            put("confidence", DataFields.USER_CONFIDENCE)
+            put("status", DataFields.STATUS_ACTIVE)
+            put("updated_at", System.currentTimeMillis())
         }
         return writableDatabase.insertOrThrow("features", null, cv)
     }
@@ -169,9 +247,9 @@ class FeatureDb private constructor(private val context: Context) :
             db.rawQuery(sql, arrayOf(*a)).use { if (it.moveToFirst()) it.getInt(0) else 0 }
         val since = (System.currentTimeMillis() - 7 * 86_400_000L).toString()
         return Stats(
-            features = count("SELECT COUNT(*) FROM features"),
-            userFeatures = count("SELECT COUNT(*) FROM features WHERE source = 'user'"),
-            zones = count("SELECT COUNT(*) FROM zones"),
+            features = count("SELECT COUNT(*) FROM features WHERE status = 'active'"),
+            userFeatures = count("SELECT COUNT(*) FROM features WHERE source = 'user' AND status = 'active'"),
+            zones = count("SELECT COUNT(*) FROM zones WHERE status = 'active'"),
             warnings7d = count("SELECT COUNT(*) FROM events WHERE type = 'warning' AND ts >= ?", since),
             overspeed7d = count("SELECT COUNT(*) FROM events WHERE type = 'overspeed' AND ts >= ?", since),
         )
@@ -216,6 +294,15 @@ class FeatureDb private constructor(private val context: Context) :
 
     companion object {
         const val BUNDLED_FILE = "vietroad_data.json"
+        private const val DB_VERSION = 2
+
+        /** Cột quản lý dữ liệu, dùng chung cho features và zones (thêm từ v2). Không dùng dấu phẩy trong từng cột. */
+        private const val META_COLUMNS =
+            "uid TEXT, data_source TEXT, confidence REAL NOT NULL DEFAULT 0.5, verified_at INTEGER, " +
+                "expires_at INTEGER, status TEXT NOT NULL DEFAULT 'active', updated_at INTEGER"
+
+        /** Chỉ cảnh báo bản ghi đang hiệu lực và chưa hết hạn. Tham số: thời điểm hiện tại (ms). */
+        private const val IN_EFFECT = "status = 'active' AND (expires_at IS NULL OR expires_at > ?)"
         private const val FEATURE_COLS =
             "id, type_code, lat, lng, heading, heading_tolerance, speed_limit, vehicles, road_name, note"
 
