@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using VietRoad.Api.Data;
+using VietRoad.Data;
 
 #nullable disable
 
-namespace VietRoad.Api.Data.Migrations
+namespace VietRoad.Data.Migrations
 {
     [DbContext(typeof(VietRoadDbContext))]
     [Migration("20261107131212_InitialCreate")]
@@ -25,7 +25,7 @@ namespace VietRoad.Api.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("VietRoad.Api.Data.AlertEntity", b =>
+            modelBuilder.Entity("VietRoad.Data.AlertEntity", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

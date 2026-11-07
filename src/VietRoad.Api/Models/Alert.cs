@@ -1,4 +1,4 @@
-namespace VietRoad.Api.Models;
+﻿namespace VietRoad.Api.Models;
 
 /// <summary>Mot diem canh bao tren duong (camera, den do...).</summary>
 public record Alert(
@@ -7,7 +7,9 @@ public record Alert(
     double Lat,
     double Lng,
     int? SpeedLimit,
-    string Name);
+    string Name,
+    double? Direction,   // huong camera (do), null = khong ro
+    string Source);      // "osm" -> app phai ghi "© OpenStreetMap contributors"
 
 /// <summary>Canh bao kem khoang cach tu vi tri tai xe den no.</summary>
 public record NearbyAlert(Alert Alert, int DistanceM);

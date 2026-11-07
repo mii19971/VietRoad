@@ -1,8 +1,11 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/VietRoad.Api/VietRoad.Api.csproj" />
+    <Project Path="src/VietRoad.Data/VietRoad.Data.csproj" />
+    <Project Path="src/VietRoad.Importer/VietRoad.Importer.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/VietRoad.Api.Tests/VietRoad.Api.Tests.csproj" />
+    <Project Path="tests/VietRoad.Importer.Tests/VietRoad.Importer.Tests.csproj" />
   </Folder>
 </Solution>

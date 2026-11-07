@@ -1,4 +1,4 @@
-namespace VietRoad.Api.Utils;
+﻿namespace VietRoad.Api.Utils;
 
 /// <summary>Hinh chu nhat theo toa do: lat trong [MinLat, MaxLat], lng trong [MinLng, MaxLng].</summary>
 public record BoundingBox(double MinLat, double MaxLat, double MinLng, double MaxLng);
