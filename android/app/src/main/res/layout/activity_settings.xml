@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- ===== Xe & cảnh báo ===== -->
+        <TextView style="@style/VRSection" android:text="@string/sec_vehicle" />
+
+        <RadioGroup
+            android:id="@+id/vehicleGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton android:id="@+id/vCar" style="@style/VRRadio" android:text="@string/v_car" />
+            <RadioButton android:id="@+id/vTruck" style="@style/VRRadio" android:text="@string/v_truck" />
+            <RadioButton android:id="@+id/vBus" style="@style/VRRadio" android:text="@string/v_bus" />
+        </RadioGroup>
+
+        <TextView android:id="@+id/toleranceLabel" style="@style/VRLabel" />
+        <SeekBar
+            android:id="@+id/toleranceBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="10" />
+
+        <androidx.appcompat.widget.SwitchCompat android:id="@+id/swVoice" style="@style/VRSwitch" android:text="@string/sw_voice" />
+        <androidx.appcompat.widget.SwitchCompat android:id="@+id/swBeep" style="@style/VRSwitch" android:text="@string/sw_beep" />
+        <androidx.appcompat.widget.SwitchCompat android:id="@+id/swOverlay" style="@style/VRSwitch" android:text="@string/sw_overlay" />
+        <androidx.appcompat.widget.SwitchCompat android:id="@+id/swAutoStart" style="@style/VRSwitch" android:text="@string/sw_autostart" />
+
+        <!-- ===== Giọng đọc ===== -->
+        <TextView style="@style/VRSection" android:text="@string/sec_voice" />
+        <TextView android:id="@+id/voiceStatus" style="@style/VRLabel" />
+
+        <TextView android:id="@+id/volumeLabel" style="@style/VRLabel" />
+        <SeekBar
+            android:id="@+id/volumeBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="10" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button android:id="@+id/btnTestVoice" style="@style/VRButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/test_voice" />
+            <Button android:id="@+id/btnInstallVoice" style="@style/VRButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/install_voice" />
+        </LinearLayout>
+
+        <!-- ===== Mô phỏng ===== -->
+        <TextView style="@style/VRSection" android:text="@string/sec_sim" />
+        <TextView android:id="@+id/simLabel" style="@style/VRLabel" />
+        <SeekBar
+            android:id="@+id/simBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="100" />
+
+        <!-- ===== Dữ liệu offline ===== -->
+        <TextView style="@style/VRSection" android:text="@string/sec_data" />
+        <TextView android:id="@+id/dataStats" style="@style/VRLabel" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button android:id="@+id/btnImport" style="@style/VRButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/import_file" />
+            <Button android:id="@+id/btnImportFolder" style="@style/VRButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/import_folder" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button android:id="@+id/btnExportUser" style="@style/VRButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/export_user" />
+            <Button android:id="@+id/btnExportAll" style="@style/VRButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/export_all" />
+            <Button android:id="@+id/btnReset" style="@style/VRButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/reset_data" />
+        </LinearLayout>
+
+        <TextView android:id="@+id/importHint" style="@style/VRLabel" android:textSize="13sp" />
+    </LinearLayout>
+</ScrollView>

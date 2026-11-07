@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:keepScreenOn="true"
+    android:orientation="horizontal"
+    android:padding="16dp">
+
+    <!-- Cột trái: tốc độ hiện tại + biển giới hạn -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <com.vietroad.app.ui.SignView
+            android:id="@+id/limitSign"
+            android:layout_width="150dp"
+            android:layout_height="150dp" />
+
+        <TextView
+            android:id="@+id/speedText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:text="0"
+            android:textColor="@color/text"
+            android:textSize="96sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="km/h"
+            android:textColor="@color/muted"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:textColor="@color/muted"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tripText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:textColor="@color/muted"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <!-- Cột phải: cảnh báo phía trước + nút điều khiển -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="16dp"
+        android:layout_weight="1.3"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/warnCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/card"
+            android:gravity="center_vertical"
+            android:minHeight="150dp"
+            android:orientation="horizontal"
+            android:padding="16dp">
+
+            <com.vietroad.app.ui.SignView
+                android:id="@+id/warnSign"
+                android:layout_width="110dp"
+                android:layout_height="110dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/warnDistance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text"
+                    android:textSize="44sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/warnName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/no_warning"
+                    android:textColor="@color/text"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/warnRoad"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/muted"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/nextList"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="8dp"
+            android:layout_weight="1"
+            android:orientation="vertical" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnStart"
+                style="@style/VRButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.2"
+                android:text="@string/start" />
+
+            <Button
+                android:id="@+id/btnSim"
+                style="@style/VRButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/simulate" />
+
+            <Button
+                android:id="@+id/btnAdd"
+                style="@style/VRButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/add_point" />
+
+            <Button
+                android:id="@+id/btnSettings"
+                style="@style/VRButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/settings" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

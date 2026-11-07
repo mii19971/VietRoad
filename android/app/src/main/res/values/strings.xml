@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VietRoad</string>
+    <string name="channel_drive">Cảnh báo khi lái xe</string>
+    <string name="notif_starting">Đang khởi động cảnh báo…</string>
+
+    <string name="start">Bắt đầu</string>
+    <string name="stop">Dừng</string>
+    <string name="simulate">Mô phỏng</string>
+    <string name="stop_sim">Dừng mô phỏng</string>
+    <string name="add_point">Thêm điểm</string>
+    <string name="settings">Cài đặt</string>
+
+    <string name="no_warning">Đường thông thoáng</string>
+    <string name="status_stopped">Chưa chạy — bấm Bắt đầu</string>
+    <string name="status_gps_ok">GPS tốt · Offline</string>
+    <string name="status_gps_wait">Đang chờ tín hiệu GPS…</string>
+    <string name="status_sim">Chế độ mô phỏng (dữ liệu mẫu)</string>
+
+    <string name="need_location">Cần cấp quyền vị trí để cảnh báo theo GPS</string>
+    <string name="need_gps_fix">Cần đang chạy và có tín hiệu GPS để thêm điểm tại vị trí hiện tại</string>
+    <string name="add_point_title">Thêm điểm tại vị trí hiện tại</string>
+    <string name="point_saved">Đã lưu: %1$s</string>
+
+    <string name="sec_vehicle">Xe &amp; cảnh báo</string>
+    <string name="v_car">Ô tô con</string>
+    <string name="v_truck">Xe tải</string>
+    <string name="v_bus">Xe khách</string>
+    <string name="tolerance_label">Cảnh báo khi vượt quá giới hạn %1$d km/h</string>
+    <string name="sw_voice">Đọc cảnh báo bằng giọng nói</string>
+    <string name="sw_beep">Phát tiếng bíp</string>
+    <string name="sw_overlay">Hiện bong bóng tốc độ trên ứng dụng khác</string>
+    <string name="sw_autostart">Tự chạy khi bật máy</string>
+
+    <string name="sec_voice">Giọng đọc (offline)</string>
+    <string name="volume_label">Khi cảnh báo, tự tăng âm lượng lên ít nhất %1$d%% (nhạc sẽ tự nhỏ lại khi đang đọc)</string>
+    <string name="volume_off">Không tự tăng âm lượng (nhạc vẫn tự nhỏ lại khi đang đọc)</string>
+    <string name="test_voice">Thử giọng đọc</string>
+    <string name="install_voice">Cài giọng tiếng Việt</string>
+
+    <string name="sec_sim">Mô phỏng</string>
+    <string name="sim_label">Tốc độ mô phỏng: %1$d km/h</string>
+
+    <string name="sec_data">Dữ liệu offline</string>
+    <string name="data_stats">%1$d điểm cảnh báo (%2$d điểm tự thêm) · %3$d đoạn giới hạn tốc độ\n7 ngày qua: %4$d lần cảnh báo, %5$d lần vượt tốc độ</string>
+    <string name="import_file">Nhập từ tệp</string>
+    <string name="import_folder">Nhập từ thư mục import</string>
+    <string name="export_user">Xuất điểm tự thêm</string>
+    <string name="export_all">Xuất toàn bộ</string>
+    <string name="reset_data">Khôi phục dữ liệu gốc</string>
+    <string name="reset_confirm">Xoá dữ liệu đã nhập và nạp lại dữ liệu đi kèm ứng dụng? Các điểm bạn tự thêm được giữ nguyên.</string>
+    <string name="import_mode_title">Cách nhập dữ liệu</string>
+    <string name="import_append">Thêm vào dữ liệu hiện có</string>
+    <string name="import_replace">Thay thế dữ liệu hiện có (giữ điểm tự thêm)</string>
+    <string name="import_result">Đã nhập %1$d điểm, %2$d đoạn tốc độ (bỏ qua %3$d bản ghi lỗi)</string>
+    <string name="import_hint">Không có trình chọn tệp? Chép tệp .json/.geojson qua USB hoặc adb vào:\n%1$s\nrồi bấm \"Nhập từ thư mục import\".</string>
+    <string name="import_folder_empty">Chưa có tệp .json nào trong %1$s</string>
+    <string name="export_done">Đã xuất dữ liệu</string>
+    <string name="exported_to">Đã lưu tại %1$s</string>
+    <string name="no_file_picker">Thiết bị không có trình chọn tệp — hãy dùng thư mục import</string>
+    <string name="not_supported">Thiết bị không hỗ trợ thao tác này</string>
+    <string name="error_prefix">Lỗi: %1$s</string>
+</resources>
