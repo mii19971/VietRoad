@@ -107,10 +107,20 @@ namespace VietRoad.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
+                    b.Property<DateTimeOffset?>("VerifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("verified_at");
+
+                    b.Property<Guid?>("VerifiedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("verified_by_user_id");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ExternalId")
                         .IsUnique();
+
+                    b.HasIndex("VerifiedByUserId");
 
                     b.HasIndex("CreatedByUserId", "CreatedAt");
 
@@ -251,6 +261,11 @@ namespace VietRoad.Data.Migrations
                     b.HasOne("VietRoad.Data.UserEntity", null)
                         .WithMany()
                         .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("VietRoad.Data.UserEntity", null)
+                        .WithMany()
+                        .HasForeignKey("VerifiedByUserId")
                         .OnDelete(DeleteBehavior.SetNull);
                 });
 

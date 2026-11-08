@@ -32,8 +32,8 @@ public class AlertImporter(VietRoadDbContext db)
             // Remove: lay ra khoi dictionary; cuoi cung con lai la nhung dong OSM da xoa.
             if (existing.Remove(item.ExternalId, out var row))
             {
+                // Khong tu bat lai IsActive: neu admin da an camera nay thi ton trong quyet dinh do.
                 Apply(item, row);
-                row.IsActive = true;
 
                 // EF so sanh voi gia tri luc doc ra de biet dong co thuc su thay doi khong.
                 var entry = db.Entry(row);

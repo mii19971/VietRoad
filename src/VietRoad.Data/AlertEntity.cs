@@ -39,6 +39,10 @@ public class AlertEntity
     /// <summary>Nguoi da bao cao (chi co voi source = "user").</summary>
     public Guid? CreatedByUserId { get; set; }
 
+    /// <summary>Admin da duyet luc nay. null = chua duyet (bao cao cua nguoi dung nam trong hang cho).</summary>
+    public DateTimeOffset? VerifiedAt { get; set; }
+    public Guid? VerifiedByUserId { get; set; }
+
     /// <summary>Canh bao tam thoi (vd chot CSGT) het han luc nay. null = vinh vien.</summary>
     public DateTimeOffset? ExpiresAt { get; set; }
 

@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/VietRoad.Admin/VietRoad.Admin.csproj" />
     <Project Path="src/VietRoad.Api/VietRoad.Api.csproj" />
     <Project Path="src/VietRoad.Data/VietRoad.Data.csproj" />
     <Project Path="src/VietRoad.Importer/VietRoad.Importer.csproj" />

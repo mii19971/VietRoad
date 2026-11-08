@@ -140,7 +140,7 @@ public class ReportService(VietRoadDbContext db, TimeProvider time)
 
         alert.ConfirmCount = votes.Count(v => v.IsConfirm);
         alert.DenyCount = votes.Count(v => !v.IsConfirm);
-        alert.Confidence = AlertScoring.Compute(alert.Source, alert.ConfirmCount, alert.DenyCount);
+        alert.Confidence = AlertScoring.Compute(alert);
         alert.UpdatedAt = now;
 
         if (isConfirm)

@@ -1,0 +1,99 @@
+@page "/alerts"
+@attribute [Authorize(Roles = "admin")]
+@inherits AdminPageBase
+
+<PageTitle>Cảnh báo - VietRoad Admin</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Cảnh báo</h1>
+    <a href="alerts/new" class="btn btn-primary">+ Thêm cảnh báo</a>
+</div>
+
+@* Form GET thuong: bo loc nam tren URL (/alerts?status=hidden&q=kim) -> chia se / bookmark duoc. *@
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-2">
+        <select name="status" class="form-select">
+            @foreach (var (value, label) in Statuses)
+            {
+                <option value="@value" selected="@(Status == value)">@label</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="source" class="form-select">
+            <option value="">Mọi nguồn</option>
+            @foreach (var s in new[] { "osm", "user", "admin", "partner" })
+            {
+                <option value="@s" selected="@(Source == s)">@s</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="type" class="form-select">
+            <option value="">Mọi loại</option>
+            @foreach (var t in Labels.AlertTypes)
+            {
+                <option value="@t" selected="@(Type == t)">@Labels.Type(t)</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4">
+        <input name="q" value="@Q" class="form-control" placeholder="Tìm theo tên hoặc mã OSM" />
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-outline-secondary w-100">Lọc</button>
+    </div>
+</form>
+
+@if (result is not null)
+{
+    <p class="text-muted">@result.Total cảnh báo</p>
+    <table class="table table-sm table-hover align-middle">
+        <thead>
+            <tr><th>#</th><th>Loại</th><th>Tên</th><th>Nguồn</th><th>Tin cậy</th><th>Trạng thái</th><th>Tạo lúc</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var a in result.Items)
+            {
+                <tr>
+                    <td><a href="alerts/@a.Id">@a.Id</a></td>
+                    <td>@Labels.Type(a.Type)</td>
+                    <td>@a.Name</td>
+                    <td>@a.Source @if (a.VerifiedAt is not null) { <span class="badge bg-success">đã duyệt</span> }</td>
+                    <td>@a.Confidence <small class="text-muted">(+@a.ConfirmCount / -@a.DenyCount)</small></td>
+                    <td>
+                        @if (!a.IsActive) { <span class="badge bg-secondary">đã tắt</span> }
+                        else if (a.IsVisible) { <span class="badge bg-primary">đang hiện</span> }
+                        else { <span class="badge bg-warning text-dark">ẩn</span> }
+                    </td>
+                    <td>@Labels.Time(a.CreatedAt)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <Pager Page="result.Page" TotalPages="result.TotalPages" PageUrl="PageUrl" />
+}
+
+@code {
+    // Bo loc lay tu URL.
+    [SupplyParameterFromQuery] private string? Status { get; set; }
+    [SupplyParameterFromQuery] private string? Source { get; set; }
+    [SupplyParameterFromQuery] private string? Type { get; set; }
+    [SupplyParameterFromQuery] private string? Q { get; set; }
+    [SupplyParameterFromQuery(Name = "page")] private int? PageNumber { get; set; }
+
+    private static readonly (string Value, string Label)[] Statuses =
+    [
+        ("all", "Mọi trạng thái"), ("visible", "Đang hiện"), ("pending", "Chờ duyệt"),
+        ("hidden", "Bị ẩn"), ("inactive", "Đã tắt"), ("expired", "Hết hạn"),
+    ];
+
+    private PagedResult<AdminAlert>? result;
+
+    protected override Task OnInitializedAsync() => RunAsync(async () =>
+        result = await Api.ListAlertsAsync(Status, Source, Type, Q, PageNumber ?? 1));
+
+    // Giu nguyen bo loc, chi doi so trang.
+    private string PageUrl(int page) => Nav.GetUriWithQueryParameter("page", page);
+}

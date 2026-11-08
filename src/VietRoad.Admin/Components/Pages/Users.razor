@@ -1,0 +1,86 @@
+﻿@page "/users"
+@attribute [Authorize(Roles = "admin")]
+@inherits AdminPageBase
+
+<PageTitle>Người dùng - VietRoad Admin</PageTitle>
+
+<h1 class="h3 mb-3">Người dùng</h1>
+
+@if (Message is not null)
+{
+    <div class="alert @(MessageIsError ? "alert-danger" : "alert-success")">@Message</div>
+}
+
+<form method="get" class="row g-2 mb-3" style="max-width: 520px">
+    <div class="col"><input name="q" value="@Q" class="form-control" placeholder="Tìm theo email hoặc tên" /></div>
+    <div class="col-auto"><button class="btn btn-outline-secondary">Tìm</button></div>
+</form>
+
+@if (result is not null)
+{
+    <p class="text-muted">@result.Total người dùng</p>
+
+    <form method="post" @formname="role" @onsubmit="ChangeRoleAsync">
+        <AntiforgeryToken />
+        <table class="table table-sm table-hover align-middle">
+            <thead>
+                <tr><th>Email</th><th>Tên</th><th>Quyền</th><th>Số báo cáo</th><th>Đăng ký</th><th>Đăng nhập gần nhất</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var u in result.Items)
+                {
+                    <tr>
+                        <td>@u.Email</td>
+                        <td>@u.DisplayName</td>
+                        <td>
+                            @if (u.Role == "admin") { <span class="badge bg-danger">admin</span> }
+                            else { <span class="badge bg-light text-dark">user</span> }
+                        </td>
+                        <td>@u.ReportCount</td>
+                        <td>@Labels.Time(u.CreatedAt)</td>
+                        <td>@Labels.Time(u.LastLoginAt)</td>
+                        <td>
+                            @if (u.Role == "admin")
+                            {
+                                <button name="Command" value="user:@u.Id" class="btn btn-outline-secondary btn-sm">Bỏ quyền admin</button>
+                            }
+                            else
+                            {
+                                <button name="Command" value="admin:@u.Id" class="btn btn-outline-danger btn-sm">Cấp quyền admin</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </form>
+
+    <Pager Page="result.Page" TotalPages="result.TotalPages" PageUrl="PageUrl" />
+}
+
+@code {
+    [SupplyParameterFromQuery] private string? Q { get; set; }
+    [SupplyParameterFromQuery(Name = "page")] private int? PageNumber { get; set; }
+    [SupplyParameterFromForm(FormName = "role")] private string? Command { get; set; }
+
+    private PagedResult<AdminUser>? result;
+
+    protected override Task OnInitializedAsync() => RunAsync(LoadAsync);
+
+    private Task ChangeRoleAsync() => RunAsync(async () =>
+    {
+        var parts = Command?.Split(':');
+        if (parts is not [var role, var idText] || !Guid.TryParse(idText, out var id))
+            return;
+
+        var res = await Api.SetRoleAsync(id, role);
+        Show(res.Error, role == "admin"
+            ? "Đã cấp quyền admin. Có hiệu lực khi người đó đăng nhập lại (tối đa 30 phút)."
+            : "Đã bỏ quyền admin. Có hiệu lực khi token hiện tại của người đó hết hạn (tối đa 30 phút).");
+        await LoadAsync();
+    });
+
+    private async Task LoadAsync() => result = await Api.ListUsersAsync(Q, PageNumber ?? 1);
+
+    private string PageUrl(int page) => Nav.GetUriWithQueryParameter("page", page);
+}

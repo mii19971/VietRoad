@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using VietRoad.Api.Admin;
 using VietRoad.Api.Auth;
 using VietRoad.Api.Endpoints;
 using VietRoad.Api.Services;
@@ -31,8 +32,9 @@ else
     builder.Services.AddSingleton<IAlertService, InMemoryAlertService>();
 }
 
-// --- User Reports ---
+// --- User Reports + Admin ---
 builder.Services.AddScoped<ReportService>();
+builder.Services.AddScoped<AdminService>();
 
 // --- User Service + JWT ---
 // Doc muc "Jwt" thanh JwtOptions, kiem tra ngay khi khoi dong: thieu khoa -> dung luon, bao loi ro rang.
@@ -60,7 +62,9 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
     });
 
 // Phan quyen (authorization) = "ban duoc lam gi?". Dung cho RequireAuthorization().
-builder.Services.AddAuthorization();
+// Policy "Admin": token phai co claim role = "admin".
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(AdminEndpoints.AdminPolicy, p => p.RequireRole(UserRoles.Admin));
 
 builder.Services.AddSingleton(TimeProvider.System); // lay gio hien tai (test co the thay bang gio gia)
 builder.Services.AddSingleton<IPasswordHasher<UserEntity>, PasswordHasher<UserEntity>>();
@@ -108,6 +112,7 @@ app.MapGet("/health", () => Results.Ok(new
 app.MapAlertEndpoints();
 app.MapAuthEndpoints();
 app.MapReportEndpoints();
+app.MapAdminEndpoints();
 
 // ===== 3. Chay server =====
 app.Run();

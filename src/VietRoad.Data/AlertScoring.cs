@@ -22,6 +22,13 @@ public static class AlertScoring
         _ => 30,                     // nguoi dung bao: chua ai kiem chung
     };
 
-    public static int Compute(string source, int confirmCount, int denyCount) =>
-        Math.Clamp(BaseConfidence(source) + PointsPerVote * (confirmCount - denyCount), 0, 100);
+    /// <summary>Canh bao da duoc admin duyet thi lay diem goc cua admin, du nguon nao.</summary>
+    public static int Compute(string source, bool verified, int confirmCount, int denyCount) =>
+        Math.Clamp(
+            (verified ? BaseConfidence(AlertSources.Admin) : BaseConfidence(source))
+            + PointsPerVote * (confirmCount - denyCount),
+            0, 100);
+
+    public static int Compute(AlertEntity a) =>
+        Compute(a.Source, a.VerifiedAt is not null, a.ConfirmCount, a.DenyCount);
 }

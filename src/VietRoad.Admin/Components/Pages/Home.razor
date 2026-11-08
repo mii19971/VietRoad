@@ -1,0 +1,38 @@
+﻿@page "/"
+@attribute [Authorize(Roles = "admin")]
+@inherits AdminPageBase
+
+<PageTitle>Tổng quan - VietRoad Admin</PageTitle>
+
+<h1 class="h3 mb-4">Tổng quan</h1>
+
+@if (stats is not null)
+{
+    <div class="row g-3 mb-4">
+        <Stat Title="Cảnh báo đang hiện" Value="stats.VisibleAlerts" />
+        <Stat Title="Báo cáo chờ duyệt" Value="stats.PendingReports" Href="reports" Highlight="stats.PendingReports > 0" />
+        <Stat Title="Bị ẩn (độ tin cậy thấp)" Value="stats.HiddenAlerts" Href="alerts?status=hidden" />
+        <Stat Title="Đã tắt" Value="stats.InactiveAlerts" Href="alerts?status=inactive" />
+        <Stat Title="Người dùng" Value="stats.Users" Href="users" />
+        <Stat Title="Quản trị viên" Value="stats.Admins" />
+        <Stat Title="Báo cáo mới (24h)" Value="stats.ReportsLast24h" />
+        <Stat Title="Lượt xác nhận (24h)" Value="stats.VotesLast24h" />
+    </div>
+
+    <h2 class="h5">Cảnh báo đang hiện theo nguồn</h2>
+    <table class="table table-sm w-auto">
+        <tbody>
+            @foreach (var (source, count) in stats.VisibleBySource.OrderByDescending(kv => kv.Value))
+            {
+                <tr><td><a href="alerts?status=visible&source=@source">@source</a></td><td class="text-end">@count</td></tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private AdminStats? stats;
+
+    protected override Task OnInitializedAsync() =>
+        RunAsync(async () => stats = await Api.GetStatsAsync());
+}

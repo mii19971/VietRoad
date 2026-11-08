@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.JsonWebTokens;
 using VietRoad.Api.Auth;
 using VietRoad.Api.Models;
+using VietRoad.Data;
 
 namespace VietRoad.Api.Endpoints;
 
@@ -21,6 +22,11 @@ public static class AuthEndpoints
         auth.MapPost("/refresh", Refresh);
         auth.MapPost("/logout", Logout);
 
+        // Cai dat lan dau: tao admin dau tien. Chi dung duoc khi he thong CHUA co admin nao.
+        auth.MapGet("/bootstrap-status", async (AuthService s, CancellationToken ct) =>
+            Results.Ok(new { needsAdmin = !await s.HasAnyAdminAsync(ct) }));
+        auth.MapPost("/bootstrap-admin", BootstrapAdmin);
+
         // Bat buoc co access token hop le, neu khong -> 401.
         var users = app.MapGroup("/api/v1/users").RequireAuthorization();
         users.MapGet("/me", GetMe);
@@ -30,23 +36,49 @@ public static class AuthEndpoints
     // RegisterRequest duoc doc tu JSON body (vi la kieu phuc tap, khong phai so/chuoi).
     private static async Task<IResult> Register(RegisterRequest req, AuthService authService, CancellationToken ct)
     {
-        if (!IsValidEmail(req.Email))
-            return BadRequest("Email khong hop le");
-        if (req.Password is null || req.Password.Length is < MinPasswordLength or > MaxPasswordLength)
-            return BadRequest($"Mat khau phai dai {MinPasswordLength}-{MaxPasswordLength} ky tu");
+        if (ValidateRegister(req, out var displayName) is { } error)
+            return BadRequest(error);
 
-        // Khong nhap ten -> lay phan truoc @ cua email.
-        var displayName = string.IsNullOrWhiteSpace(req.DisplayName)
-            ? req.Email!.Split('@')[0]
-            : req.DisplayName.Trim();
-        if (displayName.Length > MaxDisplayNameLength)
-            return BadRequest($"Ten hien thi toi da {MaxDisplayNameLength} ky tu");
-
-        var result = await authService.RegisterAsync(req.Email!, req.Password, displayName, ct);
+        var result = await authService.RegisterAsync(req.Email!, req.Password!, displayName, ct);
 
         return result is null
             ? Results.Conflict(new ErrorResponse("Email da duoc dang ky"))  // 409
             : Results.Created("/api/v1/users/me", result);                  // 201
+    }
+
+    // POST /api/v1/auth/bootstrap-admin  (giong register, nhung tai khoan la admin)
+    // Sau khi da co admin, endpoint nay luon tra 409 -> nguoi ngoai khong the tu lam admin.
+    private static async Task<IResult> BootstrapAdmin(RegisterRequest req, AuthService authService, CancellationToken ct)
+    {
+        if (await authService.HasAnyAdminAsync(ct))
+            return Results.Conflict(new ErrorResponse("He thong da co admin. Hay dang ky tai khoan thuong va nho admin cap quyen."));
+        if (ValidateRegister(req, out var displayName) is { } error)
+            return BadRequest(error);
+
+        var result = await authService.RegisterAsync(req.Email!, req.Password!, displayName, ct, UserRoles.Admin);
+
+        return result is null
+            ? Results.Conflict(new ErrorResponse("Email da duoc dang ky"))
+            : Results.Created("/api/v1/users/me", result);
+    }
+
+    // Kiem tra du lieu dang ky (dung chung cho register va bootstrap-admin). null = hop le.
+    private static string? ValidateRegister(RegisterRequest req, out string displayName)
+    {
+        displayName = "";
+        if (!IsValidEmail(req.Email))
+            return "Email khong hop le";
+        if (req.Password is null || req.Password.Length is < MinPasswordLength or > MaxPasswordLength)
+            return $"Mat khau phai dai {MinPasswordLength}-{MaxPasswordLength} ky tu";
+
+        // Khong nhap ten -> lay phan truoc @ cua email.
+        displayName = string.IsNullOrWhiteSpace(req.DisplayName)
+            ? req.Email!.Split('@')[0]
+            : req.DisplayName.Trim();
+        if (displayName.Length > MaxDisplayNameLength)
+            return $"Ten hien thi toi da {MaxDisplayNameLength} ky tu";
+
+        return null;
     }
 
     // POST /api/v1/auth/login  { "email": "...", "password": "..." }

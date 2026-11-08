@@ -1,0 +1,152 @@
+﻿@page "/alerts/new"
+@page "/alerts/{Id:int}"
+@attribute [Authorize(Roles = "admin")]
+@inherits AdminPageBase
+
+<PageTitle>@(IsNew ? "Thêm cảnh báo" : $"Cảnh báo #{Id}") - VietRoad Admin</PageTitle>
+
+<p><a href="alerts">← Danh sách cảnh báo</a></p>
+<h1 class="h3 mb-3">@(IsNew ? "Thêm cảnh báo" : $"Cảnh báo #{Id}")</h1>
+
+@if (Message is not null)
+{
+    <div class="alert @(MessageIsError ? "alert-danger" : "alert-success")">@Message</div>
+}
+
+@if (!IsNew && alert is null)
+{
+    <div class="alert alert-warning">Không tìm thấy cảnh báo.</div>
+}
+else if (Form is not null)
+{
+    @if (alert is not null)
+    {
+        <dl class="row small text-muted">
+            <dt class="col-sm-2">Nguồn</dt><dd class="col-sm-10">@alert.Source @alert.ExternalId</dd>
+            <dt class="col-sm-2">Người báo</dt><dd class="col-sm-10">@(alert.CreatedByEmail ?? "—")</dd>
+            <dt class="col-sm-2">Tin cậy</dt><dd class="col-sm-10">@alert.Confidence (xác nhận @alert.ConfirmCount, phủ nhận @alert.DenyCount)</dd>
+            <dt class="col-sm-2">Duyệt lúc</dt><dd class="col-sm-10">@Labels.Time(alert.VerifiedAt)</dd>
+            <dt class="col-sm-2">Hết hạn</dt><dd class="col-sm-10">@Labels.Time(alert.ExpiresAt)</dd>
+            <dt class="col-sm-2">Bản đồ</dt><dd class="col-sm-10"><a href="@alert.MapUrl" target="_blank">OpenStreetMap</a></dd>
+        </dl>
+    }
+
+    @if (IsOsm)
+    {
+        <div class="alert alert-info">
+            Dữ liệu từ OpenStreetMap chỉ được bật/tắt ở đây. Muốn sửa vị trí, tên… hãy sửa trên
+            openstreetmap.org — lần nhập dữ liệu sau sẽ tự cập nhật.
+        </div>
+    }
+
+    <EditForm Model="Form" method="post" OnValidSubmit="SaveAsync" FormName="alert" style="max-width: 640px">
+        @* fieldset disabled: khoa ca nhom o nhap (o bi khoa khong duoc gui len khi submit). *@
+        <fieldset disabled="@IsOsm">
+            <div class="mb-3">
+                <label class="form-label">Loại</label>
+                <InputSelect @bind-Value="Form.Type" class="form-select">
+                    @foreach (var t in Labels.AlertTypes)
+                    {
+                        <option value="@t">@Labels.Type(t)</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Tên (bỏ trống = tên mặc định theo loại)</label>
+                <InputText @bind-Value="Form.Name" class="form-control" />
+            </div>
+            <div class="row mb-3">
+                <div class="col">
+                    <label class="form-label">Vĩ độ (lat)</label>
+                    <InputNumber @bind-Value="Form.Lat" class="form-control" step="any" />
+                </div>
+                <div class="col">
+                    <label class="form-label">Kinh độ (lng)</label>
+                    <InputNumber @bind-Value="Form.Lng" class="form-control" step="any" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col">
+                    <label class="form-label">Hướng (độ, 0 = Bắc)</label>
+                    <InputNumber @bind-Value="Form.Direction" class="form-control" step="any" />
+                </div>
+                <div class="col">
+                    <label class="form-label">Giới hạn tốc độ (km/h)</label>
+                    <InputNumber @bind-Value="Form.SpeedLimit" class="form-control" />
+                </div>
+            </div>
+        </fieldset>
+
+        <div class="form-check mb-3">
+            <InputCheckbox @bind-Value="Form.IsActive" class="form-check-input" id="isActive" />
+            <label class="form-check-label" for="isActive">Đang bật (tài xế có thể thấy)</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">@(IsNew ? "Tạo" : "Lưu")</button>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    // POST: Blazor dien tu du lieu form. GET: null -> tu khoi tao trong OnInitializedAsync.
+    [SupplyParameterFromForm] private AlertForm? Form { get; set; }
+
+    [SupplyParameterFromQuery(Name = "saved")] private string? Saved { get; set; }
+
+    private AdminAlert? alert;
+    private bool IsNew => Id is null;
+    private bool IsOsm => alert?.Source == "osm";
+
+    protected override Task OnInitializedAsync() => RunAsync(async () =>
+    {
+        if (!IsNew)
+            alert = await Api.GetAlertAsync(Id!.Value);
+
+        // GET (lan dau mo trang): dien form tu du lieu hien co.
+        Form ??= alert is null ? new AlertForm { IsActive = true } : AlertForm.From(alert);
+
+        if (Saved is not null)
+            Show(null, "Đã lưu.");
+    });
+
+    private Task SaveAsync() => RunAsync(async () =>
+    {
+        // Du lieu OSM: chi gui IsActive (cac o khac bi khoa).
+        var body = IsOsm
+            ? new AlertUpsert(null, null, null, null, null, null, Form!.IsActive)
+            : Form!.ToRequest();
+
+        var result = IsNew ? await Api.CreateAlertAsync(body) : await Api.UpdateAlertAsync(Id!.Value, body);
+        if (!result.Ok)
+        {
+            Show(result.Error, "");
+            return;
+        }
+
+        // Post/Redirect/Get: chuyen sang trang xem -> F5 khong gui lai form.
+        Nav.NavigateTo($"alerts/{result.Value!.Id}?saved=1");
+    });
+
+    private sealed class AlertForm
+    {
+        public string Type { get; set; } = "speed_camera";
+        public string? Name { get; set; }
+        public double? Lat { get; set; }
+        public double? Lng { get; set; }
+        public double? Direction { get; set; }
+        public int? SpeedLimit { get; set; }
+
+        // Mac dinh false: o checkbox KHONG duoc tich thi trinh duyet khong gui gi len,
+        // Blazor de nguyen gia tri mac dinh -> phai la false.
+        public bool IsActive { get; set; }
+
+        public static AlertForm From(AdminAlert a) => new()
+        {
+            Type = a.Type, Name = a.Name, Lat = a.Lat, Lng = a.Lng,
+            Direction = a.Direction, SpeedLimit = a.SpeedLimit, IsActive = a.IsActive,
+        };
+
+        public AlertUpsert ToRequest() => new(Type, Name, Lat, Lng, SpeedLimit, Direction, IsActive);
+    }
+}

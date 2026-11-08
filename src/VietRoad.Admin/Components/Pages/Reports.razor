@@ -1,0 +1,82 @@
+@page "/reports"
+@attribute [Authorize(Roles = "admin")]
+@inherits AdminPageBase
+
+<PageTitle>Duyệt báo cáo - VietRoad Admin</PageTitle>
+
+<h1 class="h3 mb-3">Báo cáo chờ duyệt</h1>
+<p class="text-muted">
+    Báo cáo do người dùng gửi, chưa được duyệt. <strong>Duyệt</strong> = tin cậy cao (90 điểm gốc);
+    <strong>Từ chối</strong> = tắt, tài xế không thấy nữa.
+</p>
+
+@if (Message is not null)
+{
+    <div class="alert @(MessageIsError ? "alert-danger" : "alert-success")">@Message</div>
+}
+
+@if (items is { Count: 0 })
+{
+    <div class="alert alert-info">Không có báo cáo nào đang chờ.</div>
+}
+else if (items is not null)
+{
+    @* 1 form bao ca bang. Moi nut gui gia tri "approve:12" / "reject:12" -> biet nut nao, dong nao. *@
+    <form method="post" @formname="review" @onsubmit="ReviewAsync">
+        <AntiforgeryToken />
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Loại</th><th>Vị trí</th><th>Người báo</th><th>Lúc</th>
+                    <th class="text-center">Xác nhận / Phủ nhận</th><th>Tin cậy</th><th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in items)
+                {
+                    <tr>
+                        <td>
+                            <a href="alerts/@a.Id">@Labels.Type(a.Type)</a>
+                            @if (a.SpeedLimit is not null) { <span class="badge bg-secondary ms-1">@a.SpeedLimit km/h</span> }
+                        </td>
+                        <td><a href="@a.MapUrl" target="_blank">Xem bản đồ</a></td>
+                        <td>@a.CreatedByEmail</td>
+                        <td>@Labels.Time(a.CreatedAt)</td>
+                        <td class="text-center">
+                            <span class="text-success">@a.ConfirmCount</span> / <span class="text-danger">@a.DenyCount</span>
+                        </td>
+                        <td>@a.Confidence</td>
+                        <td class="text-nowrap">
+                            <button name="Command" value="approve:@a.Id" class="btn btn-success btn-sm">Duyệt</button>
+                            <button name="Command" value="reject:@a.Id" class="btn btn-outline-danger btn-sm">Từ chối</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </form>
+}
+
+@code {
+    private List<AdminAlert>? items;
+
+    // Gia tri cua nut duoc bam (name="Command"), vd "approve:12".
+    [SupplyParameterFromForm(FormName = "review")] private string? Command { get; set; }
+
+    // Thu tu o static SSR khi POST: OnInitializedAsync -> ReviewAsync (xu ly form) -> render.
+    protected override Task OnInitializedAsync() => RunAsync(LoadAsync);
+
+    private Task ReviewAsync() => RunAsync(async () =>
+    {
+        var parts = Command?.Split(':');
+        if (parts is not [var action, var idText] || !int.TryParse(idText, out var id))
+            return;
+
+        var result = action == "approve" ? await Api.ApproveAsync(id) : await Api.RejectAsync(id);
+        Show(result.Error, action == "approve" ? $"Đã duyệt cảnh báo #{id}." : $"Đã từ chối cảnh báo #{id}.");
+        await LoadAsync(); // tai lai danh sach sau khi doi
+    });
+
+    private async Task LoadAsync() =>
+        items = (await Api.ListAlertsAsync(status: "pending", pageSize: 100)).Items;
+}

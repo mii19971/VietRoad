@@ -40,6 +40,8 @@ public class VietRoadDbContext(DbContextOptions<VietRoadDbContext> options) : Db
             e.Property(a => a.DenyCount).HasColumnName("deny_count");
             e.Property(a => a.LastConfirmedAt).HasColumnName("last_confirmed_at");
             e.Property(a => a.CreatedByUserId).HasColumnName("created_by_user_id");
+            e.Property(a => a.VerifiedAt).HasColumnName("verified_at");
+            e.Property(a => a.VerifiedByUserId).HasColumnName("verified_by_user_id");
             e.Property(a => a.ExpiresAt).HasColumnName("expires_at");
             e.Property(a => a.IsActive).HasColumnName("is_active");
             e.Property(a => a.CreatedAt).HasColumnName("created_at");
@@ -57,6 +59,12 @@ public class VietRoadDbContext(DbContextOptions<VietRoadDbContext> options) : Db
             e.HasOne<UserEntity>()
                 .WithMany()
                 .HasForeignKey(a => a.CreatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Admin da duyet. Xoa tai khoan admin thi giu nguyen canh bao.
+            e.HasOne<UserEntity>()
+                .WithMany()
+                .HasForeignKey(a => a.VerifiedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
 
             // Dem "user nay da bao bao nhieu canh bao trong 24h" (chong spam).

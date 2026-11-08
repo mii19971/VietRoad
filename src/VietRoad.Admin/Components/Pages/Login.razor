@@ -1,0 +1,83 @@
+@page "/login"
+@using System.ComponentModel.DataAnnotations
+@inject ApiClient Api
+@inject NavigationManager Nav
+
+<PageTitle>Đăng nhập - VietRoad Admin</PageTitle>
+
+<div style="max-width: 380px">
+    <h1 class="h3 mb-3">Đăng nhập quản trị</h1>
+
+    @if (Expired)
+    {
+        <div class="alert alert-warning">Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.</div>
+    }
+    @if (error is not null)
+    {
+        <div class="alert alert-danger">@error</div>
+    }
+
+    @* EditForm + FormName: Blazor static SSR xu ly form POST, tu them token chong CSRF. *@
+    <EditForm Model="Input" method="post" OnValidSubmit="LoginAsync" FormName="login">
+        <DataAnnotationsValidator />
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" />
+            <ValidationMessage For="() => Input.Email" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Mật khẩu</label>
+            <InputText @bind-Value="Input.Password" type="password" class="form-control" autocomplete="current-password" />
+            <ValidationMessage For="() => Input.Password" />
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
+    </EditForm>
+
+    <p class="mt-3 text-center">Chưa có tài khoản? <a href="register">Đăng ký</a></p>
+</div>
+
+@code {
+    // Static SSR: HttpContext cua request hien tai duoc truyen xuong (de ghi cookie).
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+
+    // Gia tri lay tu form POST.
+    [SupplyParameterFromForm] private LoginInput Input { get; set; } = new();
+
+    // Gia tri lay tu query string: /login?ReturnUrl=/alerts&expired=1
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+    [SupplyParameterFromQuery(Name = "expired")] private string? ExpiredFlag { get; set; }
+    private bool Expired => ExpiredFlag is not null;
+
+    private string? error;
+
+    private async Task LoginAsync()
+    {
+        var auth = await Api.LoginAsync(Input.Email, Input.Password);
+        if (auth is null)
+        {
+            error = "Sai email hoặc mật khẩu.";
+            return;
+        }
+        if (auth.User.Role != "admin")
+        {
+            error = "Tài khoản này không có quyền quản trị.";
+            return;
+        }
+
+        await AdminSignIn.SignInAsync(HttpContext, auth);
+        Nav.NavigateTo(SafeReturnUrl());
+    }
+
+    // Chi cho chuyen huong trong trang nay. Chan "/login?ReturnUrl=https://trang-lua-dao.com".
+    private string SafeReturnUrl() =>
+        ReturnUrl is { } url && url.StartsWith('/') && !url.StartsWith("//") && !url.StartsWith("/\\") ? url : "/";
+
+    private sealed class LoginInput
+    {
+        [Required(ErrorMessage = "Nhập email")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Nhập mật khẩu")]
+        public string Password { get; set; } = "";
+    }
+}

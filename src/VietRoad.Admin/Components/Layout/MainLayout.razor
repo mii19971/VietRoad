@@ -1,0 +1,21 @@
+﻿@inherits LayoutComponentBase
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            @* AuthorizeView: chi hien phan ben trong khi da dang nhap. *@
+            <AuthorizeView>
+                <span class="me-3">@context.User.Identity?.Name</span>
+                <a href="/logout">Đăng xuất</a>
+            </AuthorizeView>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>

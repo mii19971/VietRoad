@@ -25,7 +25,7 @@ public class AuthService(
 
     /// <summary>null = email da duoc dang ky.</summary>
     public async Task<AuthResponse?> RegisterAsync(
-        string email, string password, string displayName, CancellationToken ct)
+        string email, string password, string displayName, CancellationToken ct, string role = UserRoles.User)
     {
         email = NormalizeEmail(email);
         if (await db.Users.AnyAsync(u => u.Email == email, ct))
@@ -38,7 +38,7 @@ public class AuthService(
             Email = email,
             PasswordHash = "",
             DisplayName = displayName,
-            Role = UserRoles.User,
+            Role = role,
             CreatedAt = time.GetUtcNow(),
         };
         // PasswordHasher cua ASP.NET Core Identity: PBKDF2 + salt ngau nhien + 100.000 vong lap.
@@ -56,6 +56,10 @@ public class AuthService(
             return null;
         }
     }
+
+    /// <summary>He thong da co it nhat 1 admin chua (de biet co can "cai dat lan dau" khong).</summary>
+    public Task<bool> HasAnyAdminAsync(CancellationToken ct) =>
+        db.Users.AnyAsync(u => u.Role == UserRoles.Admin, ct);
 
     /// <summary>null = sai email hoac mat khau (co tinh khong noi cai nao sai).</summary>
     public async Task<AuthResponse?> LoginAsync(string email, string password, CancellationToken ct)

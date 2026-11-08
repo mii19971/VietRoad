@@ -1,0 +1,17 @@
+@* Phan trang. PageUrl: ham tao link cho 1 so trang. *@
+@if (TotalPages > 1)
+{
+    <nav>
+        <ul class="pagination">
+            <li class="page-item @(Page <= 1 ? "disabled" : "")"><a class="page-link" href="@PageUrl(Page - 1)">«</a></li>
+            <li class="page-item disabled"><span class="page-link">Trang @Page / @TotalPages</span></li>
+            <li class="page-item @(Page >= TotalPages ? "disabled" : "")"><a class="page-link" href="@PageUrl(Page + 1)">»</a></li>
+        </ul>
+    </nav>
+}
+
+@code {
+    [Parameter] public int Page { get; set; }
+    [Parameter] public int TotalPages { get; set; }
+    [Parameter, EditorRequired] public Func<int, string> PageUrl { get; set; } = default!;
+}
