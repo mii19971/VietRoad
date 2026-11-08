@@ -27,6 +27,11 @@ public abstract class AdminPageBase : ComponentBase
             // O static SSR, NavigateTo tra ve redirect 302 cho trinh duyet.
             Nav.NavigateTo("/logout?expired=1");
         }
+        catch (HttpRequestException ex) when (ex.StatusCode is null)
+        {
+            // StatusCode null = khong ket noi duoc (API chua chay / sai cong), khac voi API tra loi loi.
+            Show(ApiConnection.Message, "");
+        }
     }
 
     protected void Show(string? error, string success)

@@ -5,6 +5,13 @@ using Microsoft.AspNetCore.WebUtilities;
 
 namespace VietRoad.Admin.Services;
 
+/// <summary>Thong bao khi khong ket noi duoc toi VietRoad.Api.</summary>
+public static class ApiConnection
+{
+    public const string Message =
+        "Không kết nối được VietRoad.Api (http://localhost:5000). Hãy chạy project VietRoad.Api với profile \"http\".";
+}
+
 /// <summary>API tra 401/403: token het han hoac khong con quyen admin -> phai dang nhap lai.</summary>
 public class ApiUnauthorizedException() : Exception("Phien dang nhap het han hoac khong co quyen.");
 

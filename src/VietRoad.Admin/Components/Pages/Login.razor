@@ -52,7 +52,17 @@
 
     private async Task LoginAsync()
     {
-        var auth = await Api.LoginAsync(Input.Email, Input.Password);
+        AuthResult? auth;
+        try
+        {
+            auth = await Api.LoginAsync(Input.Email, Input.Password);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is null)
+        {
+            error = ApiConnection.Message;
+            return;
+        }
+
         if (auth is null)
         {
             error = "Sai email hoặc mật khẩu.";

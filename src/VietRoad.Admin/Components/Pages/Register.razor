@@ -76,11 +76,23 @@
     private string? error;
 
     // Hoi API moi lan mo trang (ca GET lan POST): da co admin chua.
-    protected override async Task OnInitializedAsync() =>
-        needsFirstAdmin = await Api.NeedsFirstAdminAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            needsFirstAdmin = await Api.NeedsFirstAdminAsync();
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is null)
+        {
+            error = ApiConnection.Message;
+        }
+    }
 
     private async Task RegisterAsync()
     {
+        if (error == ApiConnection.Message)
+            return; // API chua chay: khong gui form
+
         var result = await Api.RegisterAsync(Input.Email, Input.Password, Input.DisplayName, asFirstAdmin: needsFirstAdmin);
         if (!result.Ok)
         {
