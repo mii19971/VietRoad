@@ -122,6 +122,7 @@ class DriveEngine(context: Context, private val api: ApiClient) {
     /** Tinh lai canh bao phia truoc, doc neu can, cap nhat state. */
     private fun updateAhead(position: Position) {
         val ahead = AlertLogic.ahead(nearby, position.lat, position.lng, position.heading)
+        policy.forgetPassed(ahead)
         policy.next(ahead.firstOrNull())?.let { announcer?.speak(it) }
 
         _state.update { it.copy(position = position, ahead = ahead, nearbyCount = nearby.size) }

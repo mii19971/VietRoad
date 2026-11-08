@@ -67,4 +67,34 @@ class AlertLogicTest {
             policy.next(AheadAlert(cam, 140)))                                // lan 2
         assertNull(policy.next(AheadAlert(cam, 50)))
     }
+
+    @Test
+    fun policy_speaksAgain_afterPassingAndComingBack() {
+        val policy = AnnouncementPolicy()
+        val cam = alert(5, 0.0, 0.0, speedLimit = 60)
+        fun step(distanceM: Int?): String? {
+            val ahead = distanceM?.let { listOf(AheadAlert(cam, it)) } ?: emptyList()
+            policy.forgetPassed(ahead)
+            return policy.next(ahead.firstOrNull())
+        }
+
+        assertTrue(step(450) != null)   // doc lan 1
+        assertTrue(step(140) != null)   // doc lan 2
+        assertNull(step(100))           // dang toi gan: khong doc lap
+        assertNull(step(null))          // vuot qua: camera o phia sau, khong con trong danh sach
+        assertTrue(step(450) != null)   // quay lai doan duong nay: doc lai
+    }
+
+    @Test
+    fun policy_keepsMemory_whileStillClose() {
+        val policy = AnnouncementPolicy()
+        val cam = alert(5, 0.0, 0.0)
+        val near = listOf(AheadAlert(cam, 450))
+        policy.forgetPassed(near); assertTrue(policy.next(near.first()) != null)
+        // GPS rung, khoang cach nhay len 600 m (van < 800): khong quen -> khong doc lai
+        val jitter = listOf(AheadAlert(cam, 600))
+        policy.forgetPassed(jitter); assertNull(policy.next(jitter.first()))
+        val back = listOf(AheadAlert(cam, 480))
+        policy.forgetPassed(back); assertNull(policy.next(back.first()))
+    }
 }

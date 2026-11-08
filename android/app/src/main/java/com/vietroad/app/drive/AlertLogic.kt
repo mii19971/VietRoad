@@ -62,12 +62,21 @@ object AlertLogic {
  *   - lan 1 khi con <= 500 m ("Phia truoc 450 met co camera...")
  *   - lan 2 khi con <= 150 m ("Sap toi camera...")
  * Nho id da doc de khong doc lap lai moi giay.
+ * Khi da vuot qua (canh bao khong con phia truoc) hoac da xa > 800 m thi QUEN id do,
+ * de lan sau di lai doan duong nay (vd: di roi quay ve) van duoc doc.
  */
 class AnnouncementPolicy(
     private val farDistanceM: Int = 500,
     private val nearDistanceM: Int = 150,
+    private val forgetDistanceM: Int = 800,
 ) {
     private val stage = mutableMapOf<Int, Int>() // alertId -> 0 chua doc, 1 da doc xa, 2 da doc gan
+
+    /** Goi moi lan co danh sach "phia truoc" moi: quen cac canh bao da vuot qua / da o xa. */
+    fun forgetPassed(ahead: List<AheadAlert>) {
+        val stillClose = ahead.filter { it.distanceM <= forgetDistanceM }.mapTo(HashSet()) { it.alert.id }
+        stage.keys.retainAll(stillClose)
+    }
 
     /** @return cau can doc, hoac null neu khong can doc gi. */
     fun next(nearest: AheadAlert?): String? {
