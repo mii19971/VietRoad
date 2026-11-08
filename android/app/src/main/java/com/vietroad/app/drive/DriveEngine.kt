@@ -33,6 +33,7 @@ data class DriveState(
     val position: Position? = null,
     val ahead: List<AheadAlert> = emptyList(),
     val nearbyCount: Int = 0,
+    val nearby: List<Alert> = emptyList(),  // moi canh bao trong 3 km (ve len ban do)
     val online: Boolean = true,
     val nav: NavState? = null,   // null = khong chi duong
 )
@@ -47,6 +48,10 @@ data class NavState(
     val remainingM: Int,
     val remainingS: Int,
     val rerouting: Boolean = false,    // dang tinh lai duong (vua di sai)
+    // Cho ban do: duong di ([lat, lng]) va diem den.
+    val routePoints: List<List<Double>> = emptyList(),
+    val destLat: Double = 0.0,
+    val destLng: Double = 0.0,
 )
 
 /** Dang chi duong toi dau, theo tuyen nao. */
@@ -148,7 +153,12 @@ class DriveEngine(context: Context, private val api: ApiClient) {
         }
         announcer?.speak(intro)
 
-        _state.update { it.copy(nav = NavState(destName, remainingM = route.distanceM.toInt(), remainingS = route.durationS.toInt())) }
+        _state.update {
+            it.copy(nav = NavState(
+                destName, remainingM = route.distanceM.toInt(), remainingS = route.durationS.toInt(),
+                routePoints = route.points, destLat = destLat, destLng = destLng,
+            ))
+        }
         _state.value.position?.let { updateNavigation(it) }
     }
 
@@ -194,6 +204,9 @@ class DriveEngine(context: Context, private val api: ApiClient) {
                 remainingM = progress.remainingM,
                 remainingS = progress.remainingS,
                 rerouting = nav.rerouting,
+                routePoints = route.points,   // cung 1 object -> ban do biet tuyen khong doi, khong ve lai
+                destLat = nav.destLat,
+                destLng = nav.destLng,
             ))
         }
     }
@@ -252,7 +265,7 @@ class DriveEngine(context: Context, private val api: ApiClient) {
         policy.forgetPassed(ahead)
         policy.next(ahead.firstOrNull())?.let { announcer?.speak(it) }
 
-        _state.update { it.copy(position = position, ahead = ahead, nearbyCount = nearby.size) }
+        _state.update { it.copy(position = position, ahead = ahead, nearbyCount = nearby.size, nearby = nearby) }
     }
 
     /** Tai lai canh bao khi da di xa >1 km so voi lan tai truoc, hoac sau 60 giay. */

@@ -7,7 +7,11 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -79,38 +83,37 @@ fun DriveScreen(
         val wide = maxWidth >= WIDE_LAYOUT_MIN_WIDTH
 
         if (wide) {
-            // ----- Man hinh rong: 2 cot -----
-            Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                // Cot trai (rong hon): thu quan trong nhat khi dang lai.
-                Column(Modifier.weight(1.2f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // ----- Man hinh rong (tablet, man hinh o to): ben trai thong tin, ben phai ban do lon -----
+            Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Header(state, onLogout)
                     TrackingToggle(state, hasPermission, onStartTracking, onStopTracking)
                     PermissionWarning(hasPermission) { hasPermission = hasLocationPermission(context) }
                     NavigationBlock(state, hasPermission, onOpenSearch, onStopNavigation)
-                    SpeedBlock(state, speedSize = 88)
+                    SpeedBlock(state, speedSize = 64)
                     NearestBlock(state, onVote)
-                }
-                // Cot phai: danh sach tiep theo + thong bao + nut bao cao.
-                Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Tiếp theo", style = MaterialTheme.typography.titleMedium)
                     UpcomingList(state.ahead.drop(1))
                     MessageText(state.message)
-                    // Man hinh rong: nut xep doc, to -> de bam khi dang lai.
-                    ReportButton("Báo camera tốc độ", Modifier.fillMaxWidth()) { onReport(AlertTypes.SPEED_CAMERA) }
-                    ReportButton("Báo camera đèn đỏ", Modifier.fillMaxWidth()) { onReport(AlertTypes.RED_LIGHT_CAMERA) }
-                    ReportButton("Báo chốt CSGT", Modifier.fillMaxWidth()) { onReport(AlertTypes.POLICE_CHECKPOINT) }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ReportButton("Báo camera", Modifier.weight(1f)) { onReport(AlertTypes.SPEED_CAMERA) }
+                        ReportButton("Báo đèn đỏ", Modifier.weight(1f)) { onReport(AlertTypes.RED_LIGHT_CAMERA) }
+                        ReportButton("Báo CSGT", Modifier.weight(1f)) { onReport(AlertTypes.POLICE_CHECKPOINT) }
+                    }
                 }
+                DriveMap(state, Modifier.weight(1.4f).fillMaxHeight().clip(RoundedCornerShape(16.dp)))
             }
         } else {
-            // ----- Dien thoai doc: 1 cot -----
+            // ----- Dien thoai doc: ban do chiem phan giua, toc do noi tren ban do -----
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Header(state, onLogout)
                 TrackingToggle(state, hasPermission, onStartTracking, onStopTracking)
                 PermissionWarning(hasPermission) { hasPermission = hasLocationPermission(context) }
                 NavigationBlock(state, hasPermission, onOpenSearch, onStopNavigation)
-                SpeedBlock(state, speedSize = 56)
+                Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(16.dp))) {
+                    DriveMap(state, Modifier.fillMaxSize())
+                    SpeedBadge(state, Modifier.align(Alignment.BottomStart).padding(12.dp))
+                }
                 NearestBlock(state, onVote)
-                UpcomingList(state.ahead.drop(1))
                 MessageText(state.message)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ReportButton("Báo camera", Modifier.weight(1f)) { onReport(AlertTypes.SPEED_CAMERA) }
@@ -194,6 +197,25 @@ private fun SpeedBlock(state: UiState, speedSize: Int) {
             style = MaterialTheme.typography.bodySmall,
             color = if (position?.fromGps == false) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface,
         )
+    }
+}
+
+/** O toc do nho noi tren ban do (dien thoai). */
+@Composable
+private fun SpeedBadge(state: UiState, modifier: Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+        shadowElevation = 4.dp,
+    ) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+            Text(state.position?.speedKmh?.let { "$it km/h" } ?: "-- km/h", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Text(
+                state.position?.let(::locationSource) ?: "Đang chờ vị trí…",
+                style = MaterialTheme.typography.labelSmall,
+            )
+        }
     }
 }
 

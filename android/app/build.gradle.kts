@@ -19,6 +19,11 @@ android {
         val apiBaseUrl = (project.findProperty("vietroad.apiBaseUrl") as String?) ?: "http://10.0.2.2:5000/"
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
 
+        // Kieu ban do (style) MapLibre: mau sac, font + noi tai tile. Mac dinh OpenFreeMap (mien phi, khong can key).
+        val mapStyleUrl = (project.findProperty("vietroad.mapStyleUrl") as String?)
+            ?: "https://tiles.openfreemap.org/styles/liberty"
+        buildConfigField("String", "MAP_STYLE_URL", "\"$mapStyleUrl\"")
+
         // Mac dinh (ban release) CHAN http khong ma hoa.
         manifestPlaceholders["usesCleartextTraffic"] = "false"
     }
@@ -68,6 +73,9 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+
+    // Ban do: MapLibre (ma nguon mo, ve ban do vector bang OpenGL; xoay / nghieng muot khi chi duong).
+    implementation("org.maplibre.gl:android-sdk:11.5.2")
 
     testImplementation("junit:junit:4.13.2")
 }

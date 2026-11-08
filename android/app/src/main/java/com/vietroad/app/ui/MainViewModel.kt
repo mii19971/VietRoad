@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.vietroad.app.BuildConfig
 import com.vietroad.app.VietRoadApp
+import com.vietroad.app.data.Alert
 import com.vietroad.app.data.AlertTypes
 import com.vietroad.app.data.ApiException
 import com.vietroad.app.data.AuthResponse
@@ -32,6 +33,7 @@ data class UiState(
     val position: Position? = null,
     val ahead: List<AheadAlert> = emptyList(),
     val nearbyCount: Int = 0,
+    val nearby: List<Alert> = emptyList(),
     val online: Boolean = true,
     val nav: NavState? = null,
     // Man hinh tim diem den (null = dang o man hinh lai xe).
@@ -67,7 +69,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             engine.state.collect { d ->
                 _state.update {
                     it.copy(tracking = d.tracking, position = d.position, ahead = d.ahead,
-                        nearbyCount = d.nearbyCount, online = d.online, nav = d.nav)
+                        nearbyCount = d.nearbyCount, nearby = d.nearby, online = d.online, nav = d.nav)
                 }
             }
         }

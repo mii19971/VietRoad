@@ -4,6 +4,7 @@ import android.app.Application
 import com.vietroad.app.data.ApiClient
 import com.vietroad.app.data.SessionStore
 import com.vietroad.app.drive.DriveEngine
+import org.maplibre.android.MapLibre
 
 /**
  * Application: object song suot vong doi cua tien trinh app (lau hon moi Activity / Service).
@@ -24,5 +25,7 @@ class VietRoadApp : Application() {
         session = SessionStore(this)
         api = ApiClient(BuildConfig.API_BASE_URL, session)
         engine = DriveEngine(this, api)
+        // MapLibre phai khoi tao 1 lan truoc khi tao MapView dau tien.
+        MapLibre.getInstance(this)
     }
 }
