@@ -3,6 +3,7 @@ package com.vietroad.app
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.material3.MaterialTheme
@@ -13,6 +14,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vietroad.app.ui.DriveScreen
 import com.vietroad.app.ui.LoginScreen
 import com.vietroad.app.ui.MainViewModel
+import com.vietroad.app.ui.SearchScreen
 
 /** Diem vao cua app. Chi lam 1 viec: hien giao dien Compose theo trang thai cua ViewModel. */
 class MainActivity : ComponentActivity() {
@@ -40,12 +42,24 @@ class MainActivity : ComponentActivity() {
                             onLogin = viewModel::login,
                             onRegister = viewModel::register,
                         )
+                    } else if (state.search != null) {
+                        SearchScreen(
+                            search = state.search!!,
+                            message = state.message,
+                            onSearch = viewModel::searchPlaces,
+                            onPick = viewModel::navigateTo,
+                            onClose = viewModel::closeSearch,
+                        )
+                        // Nut Back cua Android: dong man hinh tim kiem thay vi thoat app.
+                        BackHandler(onBack = viewModel::closeSearch)
                     } else {
                         DriveScreen(
                             state = state,
                             onPermissionReady = viewModel::onLocationPermissionReady,
                             onStartTracking = viewModel::startTracking,
                             onStopTracking = viewModel::stopTracking,
+                            onOpenSearch = viewModel::openSearch,
+                            onStopNavigation = viewModel::stopNavigation,
                             onReport = viewModel::report,
                             onVote = viewModel::vote,
                             onLogout = viewModel::logout,

@@ -132,6 +132,12 @@ class DriveService : Service() {
         /** Ham thuan -> unit test duoc. Vd: "Camera tốc độ (60 km/h) · còn 450 m". */
         fun notificationText(state: DriveState): String {
             if (!state.tracking || state.position == null) return "Đang chờ tín hiệu vị trí…"
+            state.nav?.let { nav ->
+                // Dang chi duong: hien chi dan sap toi. Vd "Rẽ trái vào Phố Huế · 300 m"
+                if (nav.rerouting) return "Đang tính lại đường đi…"
+                val instruction = nav.instruction ?: return "Chỉ đường đến ${nav.destinationName}"
+                return "$instruction · ${NavFormat.distance(nav.distanceToStepM ?: 0)}"
+            }
             val next = state.ahead.firstOrNull() ?: return "Không có cảnh báo phía trước"
             val limit = next.alert.speedLimit?.let { " ($it km/h)" } ?: ""
             val rounded = (next.distanceM + 25) / 50 * 50

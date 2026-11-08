@@ -6,6 +6,7 @@ import android.location.LocationManager
 import android.os.SystemClock
 import com.vietroad.app.data.Alert
 import com.vietroad.app.data.ApiClient
+import com.vietroad.app.data.RouteResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -33,7 +34,34 @@ data class DriveState(
     val ahead: List<AheadAlert> = emptyList(),
     val nearbyCount: Int = 0,
     val online: Boolean = true,
+    val nav: NavState? = null,   // null = khong chi duong
 )
+
+/** Trang thai chi duong cho man hinh / thong bao. */
+data class NavState(
+    val destinationName: String,
+    val instruction: String? = null,   // chi dan sap toi
+    val type: String? = null,
+    val modifier: String? = null,
+    val distanceToStepM: Int? = null,
+    val remainingM: Int,
+    val remainingS: Int,
+    val rerouting: Boolean = false,    // dang tinh lai duong (vua di sai)
+)
+
+/** Dang chi duong toi dau, theo tuyen nao. */
+private class ActiveNavigation(
+    val destLat: Double,
+    val destLng: Double,
+    val destName: String,
+    var navigator: Navigator,
+) {
+    val voice = NavigationVoice()
+    val offRoute = OffRouteDetector()
+    var rerouting = false
+    var lastRerouteAt = 0L
+    var rerouteAnnounced = false   // da noi "di khac tuyen" cho lan lech nay chua (chi noi 1 lan)
+}
 
 /**
  * "Bo nao" khi lai xe: nhan GPS -> tai canh bao quanh xe -> chon canh bao phia truoc -> doc giong noi.
@@ -64,6 +92,8 @@ class DriveEngine(context: Context, private val api: ApiClient) {
     private var lastFetchLng: Double? = null
     private var fetching = false
 
+    private var navigation: ActiveNavigation? = null
+
     /** Canh bao ve nguon vi tri (GPS tat, may khong co GPS...), null = on. */
     fun providerWarning(): String? {
         val providers = tracker.availableProviders()
@@ -89,6 +119,7 @@ class DriveEngine(context: Context, private val api: ApiClient) {
     fun stop() {
         trackingJob?.cancel()
         trackingJob = null
+        navigation = null
         announcer?.shutdown()
         announcer = null
         nearby = emptyList()
@@ -96,6 +127,101 @@ class DriveEngine(context: Context, private val api: ApiClient) {
         lastFetchLat = null
         lastFetchLng = null
         _state.value = DriveState()
+    }
+
+    // ---------- Chi duong ----------
+
+    /**
+     * Bat dau chi duong theo tuyen da tinh (man hinh goi api.route truoc).
+     * Tu bat theo doi GPS neu chua bat (man hinh cung bat DriveService de chay nen).
+     */
+    fun startNavigation(route: RouteResponse, destName: String, destLat: Double, destLng: Double) {
+        start()
+        val nav = ActiveNavigation(destLat, destLng, destName, Navigator(route))
+        navigation = nav
+
+        // Doc tom tat + chi dan dau tien ("Đi theo Phố Huế").
+        val intro = buildString {
+            append("Bắt đầu chỉ đường đến $destName. ")
+            append("Quãng đường ${NavFormat.spokenDistance(route.distanceM.toInt())}, khoảng ${NavFormat.duration(route.durationS.toInt())}.")
+            route.steps.firstOrNull()?.takeIf { it.type == "depart" }?.let { append(" ${it.instruction}.") }
+        }
+        announcer?.speak(intro)
+
+        _state.update { it.copy(nav = NavState(destName, remainingM = route.distanceM.toInt(), remainingS = route.durationS.toInt())) }
+        _state.value.position?.let { updateNavigation(it) }
+    }
+
+    fun stopNavigation() {
+        navigation = null
+        _state.update { it.copy(nav = null) }
+    }
+
+    private fun updateNavigation(position: Position) {
+        val nav = navigation ?: return
+        val route = nav.navigator.route
+        val progress = nav.navigator.update(position.lat, position.lng)
+        val step = route.steps.getOrNull(progress.nextStepIndex)
+
+        // Di sai duong? (xem OffRouteDetector: tinh ca truong hop xe dang trong bai do luc bat dau)
+        val offRoute = nav.offRoute.update(progress.offRouteM, position.accuracyM)
+        if (!offRoute) nav.rerouteAnnounced = false // da quay lai tuyen
+
+        if (!offRoute && step != null) {
+            nav.voice.next(progress, step, position.speedKmh)?.let { announcer?.speak(it) }
+
+            // Toi dich: doc xong (o dong tren) roi ket thuc chi duong.
+            if (step.type == "arrive" && progress.distanceToStepM <= NavigationVoice.ARRIVE_M) {
+                stopNavigation()
+                return
+            }
+        }
+
+        // 3 lan GPS lien tiep lech tuyen -> tinh lai duong (cach nhau toi thieu 15 giay).
+        val now = SystemClock.elapsedRealtime()
+        if (nav.offRoute.consecutiveOff >= OffRouteDetector.REROUTE_AFTER && !nav.rerouting &&
+            now - nav.lastRerouteAt > REROUTE_INTERVAL_MS) {
+            reroute(nav, position)
+        }
+
+        _state.update {
+            it.copy(nav = NavState(
+                destinationName = nav.destName,
+                instruction = step?.instruction,
+                type = step?.type,
+                modifier = step?.modifier,
+                distanceToStepM = progress.distanceToStepM,
+                remainingM = progress.remainingM,
+                remainingS = progress.remainingS,
+                rerouting = nav.rerouting,
+            ))
+        }
+    }
+
+    private fun reroute(nav: ActiveNavigation, from: Position) {
+        nav.rerouting = true
+        nav.lastRerouteAt = SystemClock.elapsedRealtime()
+        // Chi noi 1 lan cho moi lan lech tuyen (mat mang -> thu lai moi 15 giay nhung im lang).
+        if (!nav.rerouteAnnounced) {
+            announcer?.speak("Bạn đã đi khác tuyến. Đang tính lại đường đi.")
+            nav.rerouteAnnounced = true
+        }
+
+        scope.launch {
+            try {
+                val route = api.route(from.lat, from.lng, nav.destLat, nav.destLng)
+                if (navigation !== nav) return@launch // da huy chi duong trong luc cho
+                nav.navigator = Navigator(route)
+                nav.voice.reset()
+                nav.offRoute.reset()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Mat mang: giu tuyen cu, 15 giay sau thu lai neu van lech.
+            } finally {
+                nav.rerouting = false
+            }
+        }
     }
 
     /** Tai lai ngay (sau khi bao cao / xac nhan) de thay ket qua. */
@@ -117,6 +243,7 @@ class DriveEngine(context: Context, private val api: ApiClient) {
 
         refreshNearbyIfNeeded(position)
         updateAhead(position)
+        updateNavigation(position)
     }
 
     /** Tinh lai canh bao phia truoc, doc neu can, cap nhat state. */
@@ -162,5 +289,6 @@ class DriveEngine(context: Context, private val api: ApiClient) {
         const val FETCH_RADIUS_M = 3000
         const val REFETCH_DISTANCE_M = 1000.0
         const val REFETCH_INTERVAL_MS = 60_000L
+        const val REROUTE_INTERVAL_MS = 15_000L
     }
 }

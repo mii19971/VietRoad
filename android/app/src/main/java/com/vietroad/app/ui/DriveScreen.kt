@@ -55,6 +55,8 @@ fun DriveScreen(
     onPermissionReady: () -> Unit,
     onStartTracking: () -> Unit,
     onStopTracking: () -> Unit,
+    onOpenSearch: () -> Unit,
+    onStopNavigation: () -> Unit,
     onReport: (type: String) -> Unit,
     onVote: (alertId: Int, confirm: Boolean) -> Unit,
     onLogout: () -> Unit,
@@ -84,6 +86,7 @@ fun DriveScreen(
                     Header(state, onLogout)
                     TrackingToggle(state, hasPermission, onStartTracking, onStopTracking)
                     PermissionWarning(hasPermission) { hasPermission = hasLocationPermission(context) }
+                    NavigationBlock(state, hasPermission, onOpenSearch, onStopNavigation)
                     SpeedBlock(state, speedSize = 88)
                     NearestBlock(state, onVote)
                 }
@@ -104,6 +107,7 @@ fun DriveScreen(
                 Header(state, onLogout)
                 TrackingToggle(state, hasPermission, onStartTracking, onStopTracking)
                 PermissionWarning(hasPermission) { hasPermission = hasLocationPermission(context) }
+                NavigationBlock(state, hasPermission, onOpenSearch, onStopNavigation)
                 SpeedBlock(state, speedSize = 56)
                 NearestBlock(state, onVote)
                 UpcomingList(state.ahead.drop(1))
@@ -149,6 +153,20 @@ private fun TrackingToggle(state: UiState, hasPermission: Boolean, onStart: () -
     } else {
         Button(onClick = onStart, modifier = Modifier.fillMaxWidth().height(56.dp)) {
             Text("Bắt đầu cảnh báo", fontSize = 18.sp)
+        }
+    }
+}
+
+/** Dang chi duong: the chi dan. Chua: nut "Chi duong". */
+@Composable
+private fun NavigationBlock(state: UiState, hasPermission: Boolean, onOpenSearch: () -> Unit, onStop: () -> Unit) {
+    if (!hasPermission) return
+    val nav = state.nav
+    if (nav != null) {
+        NavCard(nav, onStop)
+    } else {
+        OutlinedButton(onClick = onOpenSearch, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            Text("Chỉ đường", fontSize = 18.sp)
         }
     }
 }

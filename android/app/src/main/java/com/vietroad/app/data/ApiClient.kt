@@ -60,11 +60,24 @@ class ApiClient(private val baseUrl: String, private val session: SessionStore) 
     suspend fun vote(alertId: Int, confirm: Boolean): Alert =
         post("api/v1/alerts/$alertId/votes", json.encodeToString(VoteRequest(if (confirm) "confirm" else "deny")), auth = true)
 
+    // ----- Chi duong (bat buoc dang nhap) -----
+
+    /** Tim dia diem; gui kem vi tri hien tai de uu tien ket qua gan. */
+    suspend fun searchPlaces(query: String, nearLat: Double?, nearLng: Double?): PlacesResponse {
+        // URLEncoder: "Hồ Gươm" -> "H%E1%BB%93+G%C6%B0%C6%A1m" (URL khong chua duoc dau cach, chu co dau).
+        var path = "api/v1/places/search?q=" + java.net.URLEncoder.encode(query, "UTF-8")
+        if (nearLat != null && nearLng != null) path += "&lat=$nearLat&lng=$nearLng"
+        return get(path, auth = true)
+    }
+
+    suspend fun route(fromLat: Double, fromLng: Double, toLat: Double, toLng: Double): RouteResponse =
+        get("api/v1/routes?fromLat=$fromLat&fromLng=$fromLng&toLat=$toLat&toLng=$toLng", auth = true)
+
     // ----- Ham phu -----
 
     // inline + reified: giu duoc kieu T luc chay de json.decodeFromString<T> biet doi sang kieu nao.
-    private suspend inline fun <reified T> get(path: String): T =
-        json.decodeFromString(execute(path, "GET", null, auth = false))
+    private suspend inline fun <reified T> get(path: String, auth: Boolean = false): T =
+        json.decodeFromString(execute(path, "GET", null, auth))
 
     private suspend inline fun <reified T> post(path: String, body: String, auth: Boolean): T =
         json.decodeFromString(execute(path, "POST", body, auth))

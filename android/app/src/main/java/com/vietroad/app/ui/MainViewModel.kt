@@ -8,6 +8,8 @@ import com.vietroad.app.VietRoadApp
 import com.vietroad.app.data.AlertTypes
 import com.vietroad.app.data.ApiException
 import com.vietroad.app.data.AuthResponse
+import com.vietroad.app.data.Place
+import com.vietroad.app.drive.NavState
 import com.vietroad.app.data.ReportRequest
 import com.vietroad.app.drive.AheadAlert
 import com.vietroad.app.drive.DriveService
@@ -31,6 +33,15 @@ data class UiState(
     val ahead: List<AheadAlert> = emptyList(),
     val nearbyCount: Int = 0,
     val online: Boolean = true,
+    val nav: NavState? = null,
+    // Man hinh tim diem den (null = dang o man hinh lai xe).
+    val search: SearchUi? = null,
+)
+
+data class SearchUi(
+    val results: List<Place> = emptyList(),
+    val busy: Boolean = false,
+    val searched: Boolean = false,   // da tim it nhat 1 lan (de hien "khong tim thay")
 )
 
 /**
@@ -56,7 +67,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             engine.state.collect { d ->
                 _state.update {
                     it.copy(tracking = d.tracking, position = d.position, ahead = d.ahead,
-                        nearbyCount = d.nearbyCount, online = d.online)
+                        nearbyCount = d.nearbyCount, online = d.online, nav = d.nav)
                 }
             }
         }
@@ -112,6 +123,50 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun stopTracking() = DriveService.stop(getApplication())
+
+    // ---------- Chi duong ----------
+
+    fun openSearch() = _state.update { it.copy(search = SearchUi(), message = null) }
+
+    fun closeSearch() = _state.update { it.copy(search = null) }
+
+    /** Tim dia diem, uu tien gan vi tri hien tai. */
+    fun searchPlaces(query: String) {
+        if (query.isBlank()) return
+        val position = _state.value.position
+        _state.update { it.copy(search = it.search?.copy(busy = true), message = null) }
+
+        viewModelScope.launch {
+            try {
+                val places = api.searchPlaces(query.trim(), position?.lat, position?.lng).places
+                _state.update { it.copy(search = it.search?.copy(results = places, busy = false, searched = true)) }
+            } catch (e: Exception) {
+                _state.update { it.copy(search = it.search?.copy(busy = false)) }
+                handleError(e)
+            }
+        }
+    }
+
+    /** Tinh duong tu vi tri hien tai toi diem da chon roi bat dau chi duong. */
+    fun navigateTo(place: Place) {
+        val position = _state.value.position
+            ?: return showMessage("Chưa có vị trí GPS, chưa tìm đường được.")
+        _state.update { it.copy(search = it.search?.copy(busy = true), message = null) }
+
+        viewModelScope.launch {
+            try {
+                val route = api.route(position.lat, position.lng, place.lat, place.lng)
+                DriveService.start(getApplication()) // chi duong tiep ca khi tat man hinh
+                engine.startNavigation(route, place.name, place.lat, place.lng)
+                _state.update { it.copy(search = null) }
+            } catch (e: Exception) {
+                _state.update { it.copy(search = it.search?.copy(busy = false)) }
+                handleError(e)
+            }
+        }
+    }
+
+    fun stopNavigation() = engine.stopNavigation()
 
     // ---------- Bao cao ----------
 

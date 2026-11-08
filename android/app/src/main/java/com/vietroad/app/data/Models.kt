@@ -67,6 +67,35 @@ data class ReportResponse(val alert: Alert, val created: Boolean)
 @Serializable
 data class ErrorBody(val error: String? = null)
 
+// ----- Chi duong -----
+
+@Serializable
+data class Place(val name: String, val address: String, val lat: Double, val lng: Double)
+
+@Serializable
+data class PlacesResponse(val places: List<Place>)
+
+/** 1 cho can lam gi do (re, vao vong xuyen, den noi...). pointIndex = vi tri trong RouteResponse.points. */
+@Serializable
+data class RouteStep(
+    val pointIndex: Int,
+    val lat: Double,
+    val lng: Double,
+    val type: String,               // depart, turn, roundabout, arrive...
+    val modifier: String? = null,   // left, right, slight left, uturn...
+    val name: String? = null,       // ten duong sau khi re
+    val instruction: String,        // cau tieng Viet server da ghep san
+)
+
+/** Tuyen duong: points = cac diem [lat, lng] noi lien. */
+@Serializable
+data class RouteResponse(
+    val distanceM: Double,
+    val durationS: Double,
+    val points: List<List<Double>>,
+    val steps: List<RouteStep>,
+)
+
 /** Cac loai canh bao, giong AlertTypes ben server. */
 object AlertTypes {
     const val SPEED_CAMERA = "speed_camera"

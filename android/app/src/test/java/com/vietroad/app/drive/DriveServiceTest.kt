@@ -26,4 +26,13 @@ class DriveServiceTest {
         val state = DriveState(tracking = true, position = position, ahead = listOf(AheadAlert(cam, 437)))
         assertEquals("Camera tốc độ (60 km/h) · còn 450 m", DriveService.notificationText(state))
     }
+
+    @Test
+    fun `dang chi duong thi hien chi dan sap toi`() {
+        val nav = NavState("Hồ Gươm", "Rẽ trái vào Phố Huế", distanceToStepM = 304, remainingM = 1000, remainingS = 100)
+        val state = DriveState(tracking = true, position = position, ahead = listOf(AheadAlert(cam, 437)), nav = nav)
+        assertEquals("Rẽ trái vào Phố Huế · 300 m", DriveService.notificationText(state))
+        assertEquals("Đang tính lại đường đi…",
+            DriveService.notificationText(state.copy(nav = nav.copy(rerouting = true))))
+    }
 }

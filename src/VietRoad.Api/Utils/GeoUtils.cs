@@ -55,4 +55,11 @@ public static class GeoUtils
     /// <summary>Toa do hop le: lat trong [-90, 90], lng trong [-180, 180].</summary>
     public static bool IsValidCoord(double lat, double lng) =>
         lat is >= -90 and <= 90 && lng is >= -180 and <= 180;
+
+    /// <summary>
+    /// Diem co nam trong khung bao dat lien Viet Nam khong (khung chu nhat, gan dung:
+    /// co lan sang 1 phan Lao / Campuchia, du de chan toa do sai hoan toan nhu o My).
+    /// </summary>
+    public static bool IsInVietnam(double lat, double lng) =>
+        lat is >= 8.0 and <= 23.5 && lng is >= 102.0 and <= 110.0;
 }

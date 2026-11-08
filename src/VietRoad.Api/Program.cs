@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using VietRoad.Api.Admin;
 using VietRoad.Api.Auth;
 using VietRoad.Api.Endpoints;
+using VietRoad.Api.Routing;
 using VietRoad.Api.Services;
 using VietRoad.Data;
 
@@ -71,6 +72,25 @@ builder.Services.AddSingleton<IPasswordHasher<UserEntity>, PasswordHasher<UserEn
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddScoped<AuthService>();
 
+// --- Routing Service (chi duong) ---
+// AddHttpClient<Interface, Class>: "typed client" - .NET tao HttpClient da cau hinh san
+// (dia chi, User-Agent, thoi gian cho) va quan ly ket noi giup (khong tu new HttpClient).
+builder.Services.AddOptions<RoutingOptions>().Bind(builder.Configuration.GetSection(RoutingOptions.SectionName));
+builder.Services.AddHttpClient<IRouteProvider, OsrmRouteProvider>((sp, http) =>
+{
+    var o = sp.GetRequiredService<IOptions<RoutingOptions>>().Value;
+    http.BaseAddress = new Uri(o.OsrmBaseUrl);
+    http.DefaultRequestHeaders.UserAgent.ParseAdd(o.UserAgent);
+    http.Timeout = TimeSpan.FromSeconds(15);
+});
+builder.Services.AddHttpClient<IPlaceSearch, NominatimPlaceSearch>((sp, http) =>
+{
+    var o = sp.GetRequiredService<IOptions<RoutingOptions>>().Value;
+    http.BaseAddress = new Uri(o.NominatimBaseUrl);
+    http.DefaultRequestHeaders.UserAgent.ParseAdd(o.UserAgent);
+    http.Timeout = TimeSpan.FromSeconds(10);
+});
+
 // Tra loi theo chuan ProblemDetails khi co loi bat ngo.
 builder.Services.AddProblemDetails();
 
@@ -124,6 +144,7 @@ app.MapAlertEndpoints();
 app.MapAuthEndpoints();
 app.MapReportEndpoints();
 app.MapAdminEndpoints();
+app.MapRoutingEndpoints();
 
 // ===== 3. Chay server =====
 app.Run();
