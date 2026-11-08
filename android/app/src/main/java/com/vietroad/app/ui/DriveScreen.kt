@@ -3,6 +3,7 @@ package com.vietroad.app.ui
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.vietroad.app.data.AlertTypes
 import com.vietroad.app.drive.AheadAlert
+import com.vietroad.app.drive.Position
 
 /** Tu be ngang nay tro len (tablet, dien thoai xoay ngang): chia 2 cot. */
 private val WIDE_LAYOUT_MIN_WIDTH = 600.dp
@@ -50,7 +52,9 @@ private val WIDE_LAYOUT_MIN_WIDTH = 600.dp
 @Composable
 fun DriveScreen(
     state: UiState,
+    onPermissionReady: () -> Unit,
     onStartTracking: () -> Unit,
+    onStopTracking: () -> Unit,
     onReport: (type: String) -> Unit,
     onVote: (alertId: Int, confirm: Boolean) -> Unit,
     onLogout: () -> Unit,
@@ -60,12 +64,11 @@ fun DriveScreen(
     var hasPermission by remember { mutableStateOf(hasLocationPermission(context)) }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
-    ) { results -> hasPermission = results.values.any { it } }
+    ) { hasPermission = hasLocationPermission(context) } // tu choi quyen thong bao van chay duoc
 
     // LaunchedEffect: chay khi hasPermission thay doi (va lan dau hien man hinh).
     LaunchedEffect(hasPermission) {
-        if (hasPermission) onStartTracking()
-        else permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+        if (hasPermission) onPermissionReady() else permissionLauncher.launch(requiredPermissions())
     }
 
     // BoxWithConstraints: cho biet kich thuoc vung ve -> chon bo cuc theo do rong man hinh.
@@ -79,6 +82,7 @@ fun DriveScreen(
                 // Cot trai (rong hon): thu quan trong nhat khi dang lai.
                 Column(Modifier.weight(1.2f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Header(state, onLogout)
+                    TrackingToggle(state, hasPermission, onStartTracking, onStopTracking)
                     PermissionWarning(hasPermission) { hasPermission = hasLocationPermission(context) }
                     SpeedBlock(state, speedSize = 88)
                     NearestBlock(state, onVote)
@@ -98,6 +102,7 @@ fun DriveScreen(
             // ----- Dien thoai doc: 1 cot -----
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Header(state, onLogout)
+                TrackingToggle(state, hasPermission, onStartTracking, onStopTracking)
                 PermissionWarning(hasPermission) { hasPermission = hasLocationPermission(context) }
                 SpeedBlock(state, speedSize = 56)
                 NearestBlock(state, onVote)
@@ -122,6 +127,29 @@ private fun Header(state: UiState, onLogout: () -> Unit) {
         Spacer(Modifier.weight(1f))
         if (!state.online) Text("Mất mạng", color = MaterialTheme.colorScheme.error)
         TextButton(onClick = onLogout) { Text("Đăng xuất") }
+    }
+}
+
+/**
+ * Dang chay: nhac rang app van canh bao khi tat man hinh + nut Dung.
+ * Da dung: nut Bat dau (to, de bam).
+ */
+@Composable
+private fun TrackingToggle(state: UiState, hasPermission: Boolean, onStart: () -> Unit, onStop: () -> Unit) {
+    if (!hasPermission) return
+    if (state.tracking) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "Đang cảnh báo — vẫn chạy khi tắt màn hình",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.weight(1f),
+            )
+            OutlinedButton(onClick = onStop) { Text("Dừng") }
+        }
+    } else {
+        Button(onClick = onStart, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+            Text("Bắt đầu cảnh báo", fontSize = 18.sp)
+        }
     }
 }
 
@@ -214,6 +242,13 @@ private fun locationSource(p: Position): String {
 
 private fun formatDistance(meters: Int): String =
     if (meters < 1000) "$meters m" else "%.1f km".format(meters / 1000.0)
+
+/** Vi tri (bat buoc) + thong bao (Android 13+, de hien thong bao "dang canh bao" cua dich vu nen). */
+private fun requiredPermissions(): Array<String> = buildList {
+    add(Manifest.permission.ACCESS_FINE_LOCATION)
+    add(Manifest.permission.ACCESS_COARSE_LOCATION)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) add(Manifest.permission.POST_NOTIFICATIONS)
+}.toTypedArray()
 
 private fun hasLocationPermission(context: Context): Boolean =
     ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||

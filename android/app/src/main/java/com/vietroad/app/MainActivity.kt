@@ -43,7 +43,9 @@ class MainActivity : ComponentActivity() {
                     } else {
                         DriveScreen(
                             state = state,
+                            onPermissionReady = viewModel::onLocationPermissionReady,
                             onStartTracking = viewModel::startTracking,
+                            onStopTracking = viewModel::stopTracking,
                             onReport = viewModel::report,
                             onVote = viewModel::vote,
                             onLogout = viewModel::logout,

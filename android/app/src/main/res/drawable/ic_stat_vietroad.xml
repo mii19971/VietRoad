@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Bieu tuong nho tren thanh trang thai (status bar). Android chi dung do dam (alpha)
+  nen ve 1 mau trang, duc lo bang evenOdd. Cung hinh voi ic_launcher_monochrome,
+  nhung "cat khung" sat bien bao (viewport 60x60 quanh tam 54,54) cho to ro.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="60"
+    android:viewportHeight="60">
+
+    <group
+        android:translateX="-24"
+        android:translateY="-24">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M24,54 a30,30 0 1,1 60,0 a30,30 0 1,1 -60,0 Z M31,54 a23,23 0 1,1 46,0 a23,23 0 1,1 -46,0 Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M40,47 h22 a2,2 0 0 1 2,2 v12 a2,2 0 0 1 -2,2 h-22 a2,2 0 0 1 -2,-2 v-12 a2,2 0 0 1 2,-2 Z M45,55 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0 Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M64,51 L71,47 L71,63 L64,59 Z" />
+    </group>
+</vector>

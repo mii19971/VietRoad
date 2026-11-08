@@ -9,6 +9,12 @@
 
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 
+    <!-- Chay nen: dich vu "foreground" dung GPS (Android 9+ / 14+ phai khai bao) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- Android 13+: phai xin quyen moi hien duoc thong bao "VietRoad dang canh bao" -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- Android 11+: phai khai bao thi moi tim thay dich vu doc giong noi (TTS). -->
     <queries>
         <intent>
@@ -18,6 +24,7 @@
 
     <!-- usesCleartextTraffic: true o ban debug (goi http://), false o ban release. -->
     <application
+        android:name=".VietRoadApp"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
@@ -34,5 +41,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Dich vu nen: GPS + giong noi khi tat man hinh. exported=false: app khac khong goi duoc. -->
+        <service
+            android:name=".drive.DriveService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
     </application>
 </manifest>
