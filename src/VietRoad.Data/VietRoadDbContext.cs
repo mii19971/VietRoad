@@ -15,6 +15,7 @@ public class VietRoadDbContext(DbContextOptions<VietRoadDbContext> options) : Db
     public DbSet<AlertEntity> Alerts => Set<AlertEntity>();
     public DbSet<UserEntity> Users => Set<UserEntity>();
     public DbSet<RefreshTokenEntity> RefreshTokens => Set<RefreshTokenEntity>();
+    public DbSet<AlertVoteEntity> AlertVotes => Set<AlertVoteEntity>();
 
     // Mo ta cau truc bang. Migration duoc sinh ra tu day.
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -35,6 +36,10 @@ public class VietRoadDbContext(DbContextOptions<VietRoadDbContext> options) : Db
             e.Property(a => a.Source).HasColumnName("source").HasMaxLength(16);
             e.Property(a => a.ExternalId).HasColumnName("external_id").HasMaxLength(64);
             e.Property(a => a.Confidence).HasColumnName("confidence");
+            e.Property(a => a.ConfirmCount).HasColumnName("confirm_count");
+            e.Property(a => a.DenyCount).HasColumnName("deny_count");
+            e.Property(a => a.LastConfirmedAt).HasColumnName("last_confirmed_at");
+            e.Property(a => a.CreatedByUserId).HasColumnName("created_by_user_id");
             e.Property(a => a.ExpiresAt).HasColumnName("expires_at");
             e.Property(a => a.IsActive).HasColumnName("is_active");
             e.Property(a => a.CreatedAt).HasColumnName("created_at");
@@ -47,6 +52,39 @@ public class VietRoadDbContext(DbContextOptions<VietRoadDbContext> options) : Db
             // Moi doi tuong ben nguon chi co 1 dong. PostgreSQL cho phep nhieu NULL
             // trong chi muc UNIQUE, nen dong khong co external_id (vd admin nhap) khong bi anh huong.
             e.HasIndex(a => a.ExternalId).IsUnique();
+
+            // Nguoi bao cao. Xoa user thi giu canh bao, chi bo lien ket (SET NULL).
+            e.HasOne<UserEntity>()
+                .WithMany()
+                .HasForeignKey(a => a.CreatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Dem "user nay da bao bao nhieu canh bao trong 24h" (chong spam).
+            e.HasIndex(a => new { a.CreatedByUserId, a.CreatedAt });
+        });
+
+        modelBuilder.Entity<AlertVoteEntity>(e =>
+        {
+            e.ToTable("alert_votes");
+            e.Property(v => v.Id).HasColumnName("id");
+            e.Property(v => v.AlertId).HasColumnName("alert_id");
+            e.Property(v => v.UserId).HasColumnName("user_id");
+            e.Property(v => v.IsConfirm).HasColumnName("is_confirm");
+            e.Property(v => v.CreatedAt).HasColumnName("created_at");
+            e.Property(v => v.UpdatedAt).HasColumnName("updated_at");
+
+            // Moi nguoi chi 1 phieu / canh bao - database tu chan.
+            e.HasIndex(v => new { v.AlertId, v.UserId }).IsUnique();
+
+            e.HasOne(v => v.Alert)
+                .WithMany(a => a.Votes)
+                .HasForeignKey(v => v.AlertId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne<UserEntity>()
+                .WithMany()
+                .HasForeignKey(v => v.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<UserEntity>(e =>

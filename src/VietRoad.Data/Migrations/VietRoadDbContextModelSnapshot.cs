@@ -36,9 +36,21 @@ namespace VietRoad.Data.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("confidence");
 
+                    b.Property<int>("ConfirmCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("confirm_count");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<int>("DenyCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("deny_count");
 
                     b.Property<double?>("Direction")
                         .HasColumnType("double precision")
@@ -56,6 +68,10 @@ namespace VietRoad.Data.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
+
+                    b.Property<DateTimeOffset?>("LastConfirmedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_confirmed_at");
 
                     b.Property<double>("Lat")
                         .HasColumnType("double precision")
@@ -96,9 +112,48 @@ namespace VietRoad.Data.Migrations
                     b.HasIndex("ExternalId")
                         .IsUnique();
 
+                    b.HasIndex("CreatedByUserId", "CreatedAt");
+
                     b.HasIndex("Lat", "Lng");
 
                     b.ToTable("alerts", "vietroad");
+                });
+
+            modelBuilder.Entity("VietRoad.Data.AlertVoteEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AlertId")
+                        .HasColumnType("integer")
+                        .HasColumnName("alert_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsConfirm")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_confirm");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("AlertId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("alert_votes", "vietroad");
                 });
 
             modelBuilder.Entity("VietRoad.Data.RefreshTokenEntity", b =>
@@ -191,6 +246,31 @@ namespace VietRoad.Data.Migrations
                     b.ToTable("users", "vietroad");
                 });
 
+            modelBuilder.Entity("VietRoad.Data.AlertEntity", b =>
+                {
+                    b.HasOne("VietRoad.Data.UserEntity", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("VietRoad.Data.AlertVoteEntity", b =>
+                {
+                    b.HasOne("VietRoad.Data.AlertEntity", "Alert")
+                        .WithMany("Votes")
+                        .HasForeignKey("AlertId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("VietRoad.Data.UserEntity", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Alert");
+                });
+
             modelBuilder.Entity("VietRoad.Data.RefreshTokenEntity", b =>
                 {
                     b.HasOne("VietRoad.Data.UserEntity", "User")
@@ -200,6 +280,11 @@ namespace VietRoad.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("VietRoad.Data.AlertEntity", b =>
+                {
+                    b.Navigation("Votes");
                 });
 
             modelBuilder.Entity("VietRoad.Data.UserEntity", b =>

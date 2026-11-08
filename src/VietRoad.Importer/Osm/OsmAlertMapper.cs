@@ -99,12 +99,7 @@ public static partial class OsmAlertMapper
         if (tags is not null && tags.TryGetValue("name", out var name) && !string.IsNullOrWhiteSpace(name))
             return name;
 
-        return type switch
-        {
-            AlertTypes.RedLightCamera => "Camera đèn đỏ",
-            AlertTypes.AverageSpeedCamera => "Camera tốc độ trung bình",
-            _ => "Camera tốc độ",
-        };
+        return AlertTypes.DefaultName(type);
     }
 
     /// <summary>"50", "50 km/h" -> 50. "30 mph", "VN:urban", "" -> null.</summary>

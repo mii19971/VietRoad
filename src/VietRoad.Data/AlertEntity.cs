@@ -26,17 +26,29 @@ public class AlertEntity
     /// <summary>Ma ben nguon, vd "osm:node/123". Dung de nhap lai ma khong tao ban trung.</summary>
     public string? ExternalId { get; set; }
 
-    /// <summary>Do tin cay 0..100.</summary>
+    /// <summary>Do tin cay 0..100, tinh boi <see cref="AlertScoring"/>.</summary>
     public int Confidence { get; set; }
+
+    /// <summary>So nguoi xac nhan "van con" / "khong con". Tinh lai tu bang alert_votes moi khi co vote.</summary>
+    public int ConfirmCount { get; set; }
+    public int DenyCount { get; set; }
+
+    /// <summary>Lan gan nhat co nguoi xac nhan "van con".</summary>
+    public DateTimeOffset? LastConfirmedAt { get; set; }
+
+    /// <summary>Nguoi da bao cao (chi co voi source = "user").</summary>
+    public Guid? CreatedByUserId { get; set; }
 
     /// <summary>Canh bao tam thoi (vd chot CSGT) het han luc nay. null = vinh vien.</summary>
     public DateTimeOffset? ExpiresAt { get; set; }
 
-    /// <summary>false = an di (vd camera da go) ma khong xoa dong.</summary>
+    /// <summary>false = an di (vd camera da bi xoa khoi OSM) ma khong xoa dong.</summary>
     public bool IsActive { get; set; } = true;
 
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
+
+    public List<AlertVoteEntity> Votes { get; set; } = [];
 }
 
 /// <summary>Cac gia tri hop le cho cot Type.</summary>
@@ -45,6 +57,23 @@ public static class AlertTypes
     public const string SpeedCamera = "speed_camera";
     public const string RedLightCamera = "red_light_camera";
     public const string AverageSpeedCamera = "average_speed_camera";
+    public const string PoliceCheckpoint = "police_checkpoint";
+
+    /// <summary>Cac loai nguoi dung duoc phep bao cao.</summary>
+    public static readonly IReadOnlySet<string> UserReportable =
+        new HashSet<string> { SpeedCamera, RedLightCamera, AverageSpeedCamera, PoliceCheckpoint };
+
+    /// <summary>Loai nao co gioi han toc do (de kiem tra du lieu nguoi dung gui len).</summary>
+    public static bool HasSpeedLimit(string type) => type is SpeedCamera or AverageSpeedCamera;
+
+    /// <summary>Ten mac dinh khi nguon khong co ten.</summary>
+    public static string DefaultName(string type) => type switch
+    {
+        RedLightCamera => "Camera đèn đỏ",
+        AverageSpeedCamera => "Camera tốc độ trung bình",
+        PoliceCheckpoint => "Chốt CSGT",
+        _ => "Camera tốc độ",
+    };
 }
 
 /// <summary>Cac gia tri hop le cho cot Source.</summary>

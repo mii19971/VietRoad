@@ -22,14 +22,17 @@ if (useDatabase)
         options.UseVietRoadDb(connectionString!));
 
     // Scoped = moi request 1 instance (vi DbContext khong dung chung giua cac request).
-    builder.Services.AddScoped<IAlertService, PostgresAlertService>();
+    builder.Services.AddScoped<IAlertService, DbAlertService>();
 }
 else
 {
-    // Chua co database -> canh bao dung du lieu mau trong bo nho.
-    // (User Service van can DbContext; test tu dang ky DbContext rieng.)
+    // Chua co database -> canh bao dung du lieu mau trong bo nho (chi de chay thu).
+    // User Service va User Reports van can DbContext; test tu dang ky DbContext rieng.
     builder.Services.AddSingleton<IAlertService, InMemoryAlertService>();
 }
+
+// --- User Reports ---
+builder.Services.AddScoped<ReportService>();
 
 // --- User Service + JWT ---
 // Doc muc "Jwt" thanh JwtOptions, kiem tra ngay khi khoi dong: thieu khoa -> dung luon, bao loi ro rang.
@@ -104,6 +107,7 @@ app.MapGet("/health", () => Results.Ok(new
 // Cac API cua tung service.
 app.MapAlertEndpoints();
 app.MapAuthEndpoints();
+app.MapReportEndpoints();
 
 // ===== 3. Chay server =====
 app.Run();

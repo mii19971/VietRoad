@@ -12,10 +12,10 @@ public class InMemoryAlertService : IAlertService
     private static readonly Alert[] Alerts =
     [
         // Du lieu GIA, chi de chay thu / test. Du lieu that nam trong database (nhap tu OSM).
-        new(1, "speed_camera",     21.0285, 105.8542, 50,   "Camera Ho Hoan Kiem",  90,   "sample"),
-        new(2, "speed_camera",     21.0368, 105.8345, 60,   "Camera Kim Ma",        null, "sample"),
-        new(3, "red_light_camera", 21.0245, 105.8412, null, "Den do Tran Hung Dao", null, "sample"),
-        new(4, "speed_camera",     10.7769, 106.7009, 50,   "Camera Q1 TP.HCM",     180,  "sample"),
+        new(1, "speed_camera",     21.0285, 105.8542, 50,   "Camera Ho Hoan Kiem",  90,   "sample", 50, 0, 0, null),
+        new(2, "speed_camera",     21.0368, 105.8345, 60,   "Camera Kim Ma",        null, "sample", 50, 0, 0, null),
+        new(3, "red_light_camera", 21.0245, 105.8412, null, "Den do Tran Hung Dao", null, "sample", 50, 0, 0, null),
+        new(4, "speed_camera",     10.7769, 106.7009, 50,   "Camera Q1 TP.HCM",     180,  "sample", 50, 0, 0, null),
     ];
 
     public Task<IReadOnlyList<NearbyAlert>> FindNearbyAsync(

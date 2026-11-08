@@ -15,8 +15,6 @@ public record ImportStats(int Added, int Updated, int Unchanged, int Deactivated
 /// </summary>
 public class AlertImporter(VietRoadDbContext db)
 {
-    // Do tin cay mac dinh cho du lieu OSM: trung binh, se tang khi nguoi dung xac nhan.
-    private const int OsmConfidence = 50;
 
     public async Task<ImportStats> ImportOsmAsync(IReadOnlyList<ImportedAlert> items, CancellationToken ct = default)
     {
@@ -58,7 +56,8 @@ public class AlertImporter(VietRoadDbContext db)
                     Name = item.Name,
                     Source = AlertSources.Osm,
                     ExternalId = item.ExternalId,
-                    Confidence = OsmConfidence,
+                    // Diem goc cho du lieu OSM; tang / giam khi nguoi dung xac nhan / phu nhan.
+                    Confidence = AlertScoring.BaseConfidence(AlertSources.Osm),
                     CreatedAt = now,
                     UpdatedAt = now,
                 };

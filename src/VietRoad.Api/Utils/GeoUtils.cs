@@ -45,6 +45,13 @@ public static class GeoUtils
         return new BoundingBox(lat - dLat, lat + dLat, lng - dLng, lng + dLng);
     }
 
+    /// <summary>Goc lech nho nhat giua 2 huong (do), ket qua 0..180. Vd 350 va 10 -> 20.</summary>
+    public static double AngleDifference(double a, double b)
+    {
+        var diff = Math.Abs(a - b) % 360;
+        return diff > 180 ? 360 - diff : diff;
+    }
+
     /// <summary>Toa do hop le: lat trong [-90, 90], lng trong [-180, 180].</summary>
     public static bool IsValidCoord(double lat, double lng) =>
         lat is >= -90 and <= 90 && lng is >= -180 and <= 180;
