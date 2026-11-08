@@ -83,7 +83,18 @@ if (useDatabase && app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<VietRoadDbContext>();
-    await db.Database.MigrateAsync();
+    try
+    {
+        await db.Database.MigrateAsync();
+    }
+    catch (Exception ex) when (ex is Npgsql.NpgsqlException or TimeoutException)
+    {
+        // Bao ro rang thay vi chi co stack trace dai: API khong chay duoc khi thieu database.
+        app.Logger.LogCritical(
+            "KHONG KET NOI DUOC DATABASE ({Host}). Kiem tra mang / VPN, hoac chuoi ket noi trong User Secrets. Loi: {Error}",
+            db.Database.GetDbConnection().DataSource, ex.Message);
+        throw;
+    }
 }
 
 // ===== 2. Pipeline xu ly request (API Gateway) =====

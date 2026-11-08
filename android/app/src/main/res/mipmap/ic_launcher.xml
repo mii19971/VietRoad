@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 5 - 7 (chua co adaptive icon): ve san 1 bieu tuong hoan chinh.
+  Nen xanh bo goc + bien bao phong to 1.3 lan (vi o day khong bi he thong cat vien).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Nen xanh, bo goc 22 -->
+    <path
+        android:fillColor="@color/brand_blue"
+        android:pathData="M22,0 h64 a22,22 0 0 1 22,22 v64 a22,22 0 0 1 -22,22 h-64 a22,22 0 0 1 -22,-22 v-64 a22,22 0 0 1 22,-22 Z" />
+
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="1.3"
+        android:scaleY="1.3">
+        <path android:fillColor="@color/sign_red" android:pathData="M24,54 a30,30 0 1,1 60,0 a30,30 0 1,1 -60,0 Z" />
+        <path android:fillColor="@color/sign_white" android:pathData="M31,54 a23,23 0 1,1 46,0 a23,23 0 1,1 -46,0 Z" />
+        <path android:fillColor="@color/camera_dark" android:pathData="M40,47 h22 a2,2 0 0 1 2,2 v12 a2,2 0 0 1 -2,2 h-22 a2,2 0 0 1 -2,-2 v-12 a2,2 0 0 1 2,-2 Z" />
+        <path android:fillColor="@color/camera_dark" android:pathData="M64,51 L71,47 L71,63 L64,59 Z" />
+        <path android:fillColor="@color/sign_white" android:pathData="M45,55 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0 Z" />
+        <path android:fillColor="@color/camera_dark" android:pathData="M47.5,55 a2.5,2.5 0 1,1 5,0 a2.5,2.5 0 1,1 -5,0 Z" />
+        <path android:fillColor="@color/sign_red" android:pathData="M58,51 a1.6,1.6 0 1,1 3.2,0 a1.6,1.6 0 1,1 -3.2,0 Z" />
+    </group>
+</vector>

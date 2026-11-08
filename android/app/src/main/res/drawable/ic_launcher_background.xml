@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lop NEN cua adaptive icon (108 x 108 dp).
+  He thong cat lop nay theo hinh dang cua tung may (tron, vuong bo goc, giot nuoc...).
+  Nen xanh dam + 2 vach ke duong mo, goi y "duong xa".
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="@color/brand_blue"
+        android:pathData="M0,0h108v108h-108z" />
+
+    <!-- 2 vach ke duong cheo, mau trang mo 12% -->
+    <path
+        android:fillColor="#1FFFFFFF"
+        android:pathData="M30,108 L46,0 L52,0 L38,108 Z" />
+    <path
+        android:fillColor="#1FFFFFFF"
+        android:pathData="M78,108 L62,0 L56,0 L70,108 Z" />
+</vector>
