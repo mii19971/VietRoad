@@ -70,6 +70,10 @@ class ApiClient(private val baseUrl: String, private val session: SessionStore) 
         return get(path, auth = true)
     }
 
+    /** Tra nguoc: toa do -> dia chi ngan, vd "Phố Đinh Tiên Hoàng, Khu phố cổ". */
+    suspend fun reversePlace(lat: Double, lng: Double): Place =
+        get("api/v1/places/reverse?lat=$lat&lng=$lng", auth = true)
+
     suspend fun route(fromLat: Double, fromLng: Double, toLat: Double, toLng: Double): RouteResponse =
         get("api/v1/routes?fromLat=$fromLat&fromLng=$fromLng&toLat=$toLat&toLng=$toLng", auth = true)
 

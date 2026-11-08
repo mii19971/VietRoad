@@ -41,6 +41,9 @@ data class UiState(
 )
 
 data class SearchUi(
+    val originName: String? = null,  // dia chi vi tri hien tai (null = dang tra / khong biet)
+    val originLoading: Boolean = false,
+    val picked: Place? = null,       // diem den vua chon (dang tinh duong)
     val results: List<Place> = emptyList(),
     val busy: Boolean = false,
     val searched: Boolean = false,   // da tim it nhat 1 lan (de hien "khong tim thay")
@@ -128,7 +131,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---------- Chi duong ----------
 
-    fun openSearch() = _state.update { it.copy(search = SearchUi(), message = null) }
+    fun openSearch() {
+        val position = _state.value.position
+        _state.update { it.copy(search = SearchUi(originLoading = position != null), message = null) }
+
+        // Tra dia chi vi tri hien tai de hien "Từ: ...". Loi thi man hinh hien toa do thay the.
+        position ?: return
+        viewModelScope.launch {
+            val name = runCatching { api.reversePlace(position.lat, position.lng).name }.getOrNull()
+            _state.update { it.copy(search = it.search?.copy(originName = name, originLoading = false)) }
+        }
+    }
 
     fun closeSearch() = _state.update { it.copy(search = null) }
 
@@ -153,16 +166,19 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun navigateTo(place: Place) {
         val position = _state.value.position
             ?: return showMessage("Chưa có vị trí GPS, chưa tìm đường được.")
-        _state.update { it.copy(search = it.search?.copy(busy = true), message = null) }
+        _state.update { it.copy(search = it.search?.copy(busy = true, picked = place), message = null) }
 
         viewModelScope.launch {
             try {
                 val route = api.route(position.lat, position.lng, place.lat, place.lng)
                 DriveService.start(getApplication()) // chi duong tiep ca khi tat man hinh
-                engine.startNavigation(route, place.name, place.lat, place.lng)
+                // Khong co dia chi -> dung toa do, the chi duong van ghi ro "Từ ...".
+                val origin = _state.value.search?.originName
+                    ?: "%.5f, %.5f".format(java.util.Locale.US, position.lat, position.lng)
+                engine.startNavigation(route, place.name, place.lat, place.lng, origin)
                 _state.update { it.copy(search = null) }
             } catch (e: Exception) {
-                _state.update { it.copy(search = it.search?.copy(busy = false)) }
+                _state.update { it.copy(search = it.search?.copy(busy = false, picked = null)) }
                 handleError(e)
             }
         }

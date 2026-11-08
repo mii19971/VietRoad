@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
@@ -39,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import com.vietroad.app.data.Place
 import com.vietroad.app.drive.NavFormat
 import com.vietroad.app.drive.NavState
+import com.vietroad.app.drive.Position
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -47,6 +50,7 @@ import java.util.Locale
 @Composable
 fun SearchScreen(
     search: SearchUi,
+    position: Position?,
     message: String?,
     onSearch: (String) -> Unit,
     onPick: (Place) -> Unit,
@@ -61,6 +65,27 @@ fun SearchScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onClose) { Text("← Quay lại") }
             Text("Chỉ đường", style = MaterialTheme.typography.titleLarge)
+        }
+
+        // Ghi chu "đi từ đâu đến đâu".
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                RoutePoint(
+                    dot = "●", dotColor = MaterialTheme.colorScheme.primary, label = "Từ",
+                    text = when {
+                        position == null -> "Chưa có vị trí GPS"
+                        search.originName != null -> "Vị trí hiện tại · ${search.originName}"
+                        search.originLoading -> "Vị trí hiện tại · đang xác định địa chỉ…"
+                        // Khong tra duoc dia chi (mat mang, API cu...): hien toa do de van biet la cho nao.
+                        else -> "Vị trí hiện tại · ${"%.5f, %.5f".format(Locale.US, position.lat, position.lng)}"
+                    },
+                )
+                RoutePoint(
+                    dot = "●", dotColor = Color(0xFF2E7D32), label = "Đến",
+                    text = search.picked?.let { "${it.name} (đang tìm đường…)" } ?: "Chọn điểm đến bên dưới",
+                    dim = search.picked == null,
+                )
+            }
         }
 
         OutlinedTextField(
@@ -106,6 +131,22 @@ fun SearchScreen(
     }
 }
 
+/** 1 dong "● Từ: ..." / "● Đến: ...". Cham mau giong ban do: xanh = xe, xanh la = diem den. */
+@Composable
+private fun RoutePoint(dot: String, dotColor: Color, label: String, text: String, dim: Boolean = false) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(dot, color = dotColor)
+        Spacer(Modifier.width(8.dp))
+        Text("$label: ", style = MaterialTheme.typography.labelLarge)
+        Text(
+            text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (dim) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            maxLines = 1, overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
 /** The chi dan khi dang chi duong: mui ten + khoang cach toi cho re + thoi gian con lai. */
 @Composable
 fun NavCard(nav: NavState, onStop: () -> Unit) {
@@ -131,6 +172,9 @@ fun NavCard(nav: NavState, onStop: () -> Unit) {
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
+                    nav.originName?.let {
+                        Text("Từ $it", style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                     Text("Đến ${nav.destinationName}", maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
                         "Còn ${NavFormat.distance(nav.remainingM)} · ${NavFormat.duration(nav.remainingS)} · đến lúc ${arrivalClock(nav.remainingS)}",

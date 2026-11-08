@@ -41,6 +41,7 @@ data class DriveState(
 /** Trang thai chi duong cho man hinh / thong bao. */
 data class NavState(
     val destinationName: String,
+    val originName: String? = null,    // diem xuat phat (dia chi luc bat dau), null = khong ro
     val instruction: String? = null,   // chi dan sap toi
     val type: String? = null,
     val modifier: String? = null,
@@ -59,6 +60,7 @@ private class ActiveNavigation(
     val destLat: Double,
     val destLng: Double,
     val destName: String,
+    val originName: String?,
     var navigator: Navigator,
 ) {
     val voice = NavigationVoice()
@@ -140,9 +142,9 @@ class DriveEngine(context: Context, private val api: ApiClient) {
      * Bat dau chi duong theo tuyen da tinh (man hinh goi api.route truoc).
      * Tu bat theo doi GPS neu chua bat (man hinh cung bat DriveService de chay nen).
      */
-    fun startNavigation(route: RouteResponse, destName: String, destLat: Double, destLng: Double) {
+    fun startNavigation(route: RouteResponse, destName: String, destLat: Double, destLng: Double, originName: String? = null) {
         start()
-        val nav = ActiveNavigation(destLat, destLng, destName, Navigator(route))
+        val nav = ActiveNavigation(destLat, destLng, destName, originName, Navigator(route))
         navigation = nav
 
         // Doc tom tat + chi dan dau tien ("Đi theo Phố Huế").
@@ -155,7 +157,8 @@ class DriveEngine(context: Context, private val api: ApiClient) {
 
         _state.update {
             it.copy(nav = NavState(
-                destName, remainingM = route.distanceM.toInt(), remainingS = route.durationS.toInt(),
+                destName, originName = originName,
+                remainingM = route.distanceM.toInt(), remainingS = route.durationS.toInt(),
                 routePoints = route.points, destLat = destLat, destLng = destLng,
             ))
         }
@@ -197,6 +200,7 @@ class DriveEngine(context: Context, private val api: ApiClient) {
         _state.update {
             it.copy(nav = NavState(
                 destinationName = nav.destName,
+                originName = nav.originName,
                 instruction = step?.instruction,
                 type = step?.type,
                 modifier = step?.modifier,

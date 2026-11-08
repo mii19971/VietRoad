@@ -119,6 +119,34 @@ public class FakeRouting : IRouteProvider, IPlaceSearch
 
     public Task<IReadOnlyList<Place>> SearchAsync(string query, double? nearLat, double? nearLng, CancellationToken ct) =>
         Task.FromResult(Places());
+
+    public Func<Place?> Reverse { get; set; } = () => null;
+
+    public Task<Place?> ReverseAsync(double lat, double lng, CancellationToken ct) => Task.FromResult(Reverse());
+}
+
+public class NominatimMappingTests
+{
+    [Fact]
+    public void ReversePlace_NoName_UsesStreetAndWard_SkipsHouseNumberAndPostcode()
+    {
+        var p = NominatimPlaceSearch.ToReversePlace(new NominatimItem(
+            "", "15, Phố Đinh Tiên Hoàng, Phường Hoàn Kiếm, Hà Nội, 11024, Việt Nam", "21.0285", "105.8542"));
+        Assert.Equal("Phố Đinh Tiên Hoàng, Phường Hoàn Kiếm", p!.Name);
+    }
+
+    [Fact]
+    public void ReversePlace_RealNominatimSample_StreetPlusArea()
+    {
+        // Ket qua that cua Nominatim tai Ho Guom.
+        var p = NominatimPlaceSearch.ToReversePlace(new NominatimItem(
+            "Phố Đinh Tiên Hoàng", "Phố Đinh Tiên Hoàng, Khu phố cổ, Phường Hoàn Kiếm, Hà Nội, 11024, Việt Nam", "21.0285", "105.8539"));
+        Assert.Equal("Phố Đinh Tiên Hoàng, Khu phố cổ", p!.Name);
+    }
+
+    [Fact]
+    public void ReversePlace_ErrorResponse_ReturnsNull() =>
+        Assert.Null(NominatimPlaceSearch.ToReversePlace(new NominatimItem(null, null, null, null)));
 }
 
 public class RoutingTestFactory : TestAppFactory
@@ -212,5 +240,19 @@ public class RoutingApiTests(RoutingTestFactory factory) : IClassFixture<Routing
 
         var empty = await client.GetAsync("/api/v1/places/search?q=%20");
         Assert.Equal(HttpStatusCode.BadRequest, empty.StatusCode);
+    }
+
+    [Fact]
+    public async Task ReversePlace_ReturnsAddress_Or404()
+    {
+        var client = await UserClientAsync();
+
+        factory.Fake.Reverse = () => new Place("Phố Đinh Tiên Hoàng, Phường Hoàn Kiếm", "...", 21.0285, 105.8542);
+        var ok = await client.GetFromJsonAsync<Place>("/api/v1/places/reverse?lat=21.0285&lng=105.8542");
+        Assert.Equal("Phố Đinh Tiên Hoàng, Phường Hoàn Kiếm", ok!.Name);
+
+        factory.Fake.Reverse = () => null;
+        var none = await client.GetAsync("/api/v1/places/reverse?lat=21.0285&lng=105.8542");
+        Assert.Equal(HttpStatusCode.NotFound, none.StatusCode);
     }
 }

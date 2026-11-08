@@ -17,6 +17,9 @@ public static class RoutingEndpoints
         // GET /api/v1/places/search?q=Hồ Gươm&lat=21.03&lng=105.85
         group.MapGet("/places/search", SearchPlaces);
 
+        // GET /api/v1/places/reverse?lat=21.0285&lng=105.8542  -> dia chi cua vi tri do
+        group.MapGet("/places/reverse", ReversePlace);
+
         // GET /api/v1/routes?fromLat=21.03&fromLng=105.85&toLat=21.02&toLng=105.84
         group.MapGet("/routes", Route);
     }
@@ -33,6 +36,24 @@ public static class RoutingEndpoints
         try
         {
             return Results.Ok(new PlacesResponse(await places.SearchAsync(q, lat, lng, ct)));
+        }
+        catch (RoutingUnavailableException ex)
+        {
+            return Unavailable(ex);
+        }
+    }
+
+    private static async Task<IResult> ReversePlace(double? lat, double? lng, IPlaceSearch places, CancellationToken ct)
+    {
+        if (lat is not { } la || lng is not { } ln || !GeoUtils.IsValidCoord(la, ln))
+            return BadRequest("lat/lng khong hop le");
+
+        try
+        {
+            var place = await places.ReverseAsync(la, ln, ct);
+            return place is null
+                ? Results.NotFound(new ErrorResponse("Không xác định được địa chỉ"))
+                : Results.Ok(place);
         }
         catch (RoutingUnavailableException ex)
         {

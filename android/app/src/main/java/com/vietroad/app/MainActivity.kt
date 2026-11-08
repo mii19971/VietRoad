@@ -45,6 +45,7 @@ class MainActivity : ComponentActivity() {
                     } else if (state.search != null) {
                         SearchScreen(
                             search = state.search!!,
+                            position = state.position,
                             message = state.message,
                             onSearch = viewModel::searchPlaces,
                             onPick = viewModel::navigateTo,

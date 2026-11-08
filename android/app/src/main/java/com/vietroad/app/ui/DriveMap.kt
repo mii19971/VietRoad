@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import android.os.Build
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -36,6 +37,7 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapLibreMapOptions
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
@@ -125,7 +127,10 @@ fun DriveMap(state: UiState, modifier: Modifier = Modifier) {
  * Style (kieu ban do) tai qua mang, mat vai giay: du lieu den truoc thi giu lai, tai xong moi ve.
  */
 class MapController(context: Context) {
-    val mapView = MapView(context).also { it.onCreate(null) }
+    // May ao: bo gia lap OpenGL (libGLESv2_enc) hay crash voi SurfaceView (SIGSEGV trong glDrawElements)
+    // -> dung TextureView. May that giu SurfaceView (nhanh, tiet kiem pin hon).
+    val mapView = MapView(context, MapLibreMapOptions.createFromAttributes(context).textureMode(isEmulator()))
+        .also { it.onCreate(null) }
     var onUserMovedMap: (() -> Unit)? = null
 
     private var map: MapLibreMap? = null
@@ -337,6 +342,10 @@ class MapController(context: Context) {
     }
 
     private companion object {
+        fun isEmulator(): Boolean =
+            Build.HARDWARE.contains("ranchu") || Build.HARDWARE.contains("goldfish") ||
+                Build.FINGERPRINT.contains("generic") || Build.PRODUCT.startsWith("sdk_")
+
         const val SRC_ROUTE = "vr-route"
         const val SRC_ALERTS = "vr-alerts"
         const val SRC_DEST = "vr-destination"

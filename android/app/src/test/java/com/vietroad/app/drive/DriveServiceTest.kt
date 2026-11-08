@@ -29,7 +29,7 @@ class DriveServiceTest {
 
     @Test
     fun `dang chi duong thi hien chi dan sap toi`() {
-        val nav = NavState("Hồ Gươm", "Rẽ trái vào Phố Huế", distanceToStepM = 304, remainingM = 1000, remainingS = 100)
+        val nav = NavState("Hồ Gươm", instruction = "Rẽ trái vào Phố Huế", distanceToStepM = 304, remainingM = 1000, remainingS = 100)
         val state = DriveState(tracking = true, position = position, ahead = listOf(AheadAlert(cam, 437)), nav = nav)
         assertEquals("Rẽ trái vào Phố Huế · 300 m", DriveService.notificationText(state))
         assertEquals("Đang tính lại đường đi…",

@@ -8,6 +8,9 @@ public interface IPlaceSearch
 {
     /// <param name="nearLat">Vi tri hien tai (neu co): uu tien ket qua gan day.</param>
     Task<IReadOnlyList<Place>> SearchAsync(string query, double? nearLat, double? nearLng, CancellationToken ct);
+
+    /// <summary>Tra nguoc: toa do -> dia chi ("Phố Đinh Tiên Hoàng, Phường Hoàn Kiếm"). null = khong biet.</summary>
+    Task<Place?> ReverseAsync(double lat, double lng, CancellationToken ct);
 }
 
 /// <summary>
@@ -30,7 +33,22 @@ public class NominatimPlaceSearch(HttpClient http, ILogger<NominatimPlaceSearch>
                 "&viewbox={0},{1},{2},{3}&bounded=0", lng - 0.5, lat + 0.5, lng + 0.5, lat - 0.5);
         }
 
-        List<NominatimItem>? items;
+        var items = await CallAsync<List<NominatimItem>>(url, ct);
+        return (items ?? []).Select(ToPlace).OfType<Place>().ToList();
+    }
+
+    public async Task<Place?> ReverseAsync(double lat, double lng, CancellationToken ct)
+    {
+        // zoom=17: chinh xac toi muc con duong (khong can so nha).
+        var url = string.Format(CultureInfo.InvariantCulture,
+            "reverse?format=jsonv2&zoom=17&accept-language=vi&lat={0}&lon={1}", lat, lng);
+        var item = await CallAsync<NominatimItem>(url, ct);
+        return item is null ? null : ToReversePlace(item);
+    }
+
+    /// <summary>Goi Nominatim: xep hang (toi da 1 request/giay), doi loi mang thanh RoutingUnavailableException.</summary>
+    private async Task<T?> CallAsync<T>(string url, CancellationToken ct)
+    {
         await Gate.WaitAsync(ct);
         try
         {
@@ -38,7 +56,7 @@ public class NominatimPlaceSearch(HttpClient http, ILogger<NominatimPlaceSearch>
             if (wait > TimeSpan.Zero) await Task.Delay(wait, ct);
             _lastCall = DateTimeOffset.UtcNow;
 
-            items = await http.GetFromJsonAsync<List<NominatimItem>>(url, ct);
+            return await http.GetFromJsonAsync<T>(url, ct);
         }
         catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException || (ex is TaskCanceledException && !ct.IsCancellationRequested))
         {
@@ -49,14 +67,30 @@ public class NominatimPlaceSearch(HttpClient http, ILogger<NominatimPlaceSearch>
         {
             Gate.Release();
         }
+    }
 
-        return (items ?? []).Select(ToPlace).OfType<Place>().ToList();
+    /// <summary>
+    /// Ket qua tra nguoc -> ten ngan de hien "Từ: ...": 2 phan dau cua dia chi, bo so nha / ma buu dien.
+    /// "15, Phố Đinh Tiên Hoàng, Khu phố cổ, Phường Hoàn Kiếm, Hà Nội, 11024, Việt Nam"
+    ///   -> "Phố Đinh Tiên Hoàng, Khu phố cổ" (chi ten duong thi kho biet o khu nao).
+    /// </summary>
+    public static Place? ToReversePlace(NominatimItem i)
+    {
+        var place = ToPlace(i);
+        if (place is null) return null;
+
+        var parts = place.Address.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Where(p => !p.All(c => char.IsDigit(c) || c is '/' or '-' or ' '))
+            .Take(2);
+        var shortName = string.Join(", ", parts);
+        return place with { Name = shortName.Length > 0 ? shortName : place.Name };
     }
 
     /// <summary>Doi 1 ket qua Nominatim sang Place. Ten rong -> lay phan dau cua dia chi.</summary>
     public static Place? ToPlace(NominatimItem i)
     {
-        if (!double.TryParse(i.Lat, CultureInfo.InvariantCulture, out var lat) ||
+        if (i.Lat is null || i.Lon is null ||
+            !double.TryParse(i.Lat, CultureInfo.InvariantCulture, out var lat) ||
             !double.TryParse(i.Lon, CultureInfo.InvariantCulture, out var lng))
             return null;
 
@@ -66,9 +100,9 @@ public class NominatimPlaceSearch(HttpClient http, ILogger<NominatimPlaceSearch>
     }
 }
 
-// Nominatim tra lat/lon dang chuoi.
+// Nominatim tra lat/lon dang chuoi. Tra nguoc khong ra gi -> {"error": "..."}: lat/lon = null.
 public record NominatimItem(
     [property: JsonPropertyName("name")] string? Name,
     [property: JsonPropertyName("display_name")] string? DisplayName,
-    [property: JsonPropertyName("lat")] string Lat,
-    [property: JsonPropertyName("lon")] string Lon);
+    [property: JsonPropertyName("lat")] string? Lat,
+    [property: JsonPropertyName("lon")] string? Lon);
