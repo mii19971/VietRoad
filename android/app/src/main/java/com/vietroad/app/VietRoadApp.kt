@@ -23,7 +23,7 @@ class VietRoadApp : Application() {
     override fun onCreate() {
         super.onCreate()
         session = SessionStore(this)
-        api = ApiClient(BuildConfig.API_BASE_URL, session)
+        api = ApiClient(DeviceInfo.apiBaseUrl, session)
         engine = DriveEngine(this, api)
         // MapLibre phai khoi tao 1 lan truoc khi tao MapView dau tien.
         MapLibre.getInstance(this)

@@ -6,7 +6,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
-import android.os.Build
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -28,6 +27,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.vietroad.app.BuildConfig
+import com.vietroad.app.DeviceInfo
 import com.vietroad.app.data.Alert
 import com.vietroad.app.data.AlertTypes
 import com.vietroad.app.drive.Position
@@ -129,7 +129,7 @@ fun DriveMap(state: UiState, modifier: Modifier = Modifier) {
 class MapController(context: Context) {
     // May ao: bo gia lap OpenGL (libGLESv2_enc) hay crash voi SurfaceView (SIGSEGV trong glDrawElements)
     // -> dung TextureView. May that giu SurfaceView (nhanh, tiet kiem pin hon).
-    val mapView = MapView(context, MapLibreMapOptions.createFromAttributes(context).textureMode(isEmulator()))
+    val mapView = MapView(context, MapLibreMapOptions.createFromAttributes(context).textureMode(DeviceInfo.isEmulator))
         .also { it.onCreate(null) }
     var onUserMovedMap: (() -> Unit)? = null
 
@@ -342,10 +342,6 @@ class MapController(context: Context) {
     }
 
     private companion object {
-        fun isEmulator(): Boolean =
-            Build.HARDWARE.contains("ranchu") || Build.HARDWARE.contains("goldfish") ||
-                Build.FINGERPRINT.contains("generic") || Build.PRODUCT.startsWith("sdk_")
-
         const val SRC_ROUTE = "vr-route"
         const val SRC_ALERTS = "vr-alerts"
         const val SRC_DEST = "vr-destination"

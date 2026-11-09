@@ -3,7 +3,7 @@ package com.vietroad.app.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.vietroad.app.BuildConfig
+import com.vietroad.app.DeviceInfo
 import com.vietroad.app.VietRoadApp
 import com.vietroad.app.data.Alert
 import com.vietroad.app.data.AlertTypes
@@ -233,7 +233,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun Exception.toUserMessage(): String = when (this) {
         is ApiException -> message ?: "Lỗi máy chủ"
-        is IOException -> "Không kết nối được máy chủ ${BuildConfig.API_BASE_URL}"
+        is IOException -> "Không kết nối được máy chủ ${DeviceInfo.apiBaseUrl}"
         else -> "Lỗi: $message"
     }
 }

@@ -26,7 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.vietroad.app.BuildConfig
+import com.vietroad.app.DeviceInfo
 
 /**
  * Man hinh dang nhap / dang ky.
@@ -96,7 +96,7 @@ fun LoginScreen(
             Text(if (isRegister) "Đã có tài khoản? Đăng nhập" else "Chưa có tài khoản? Đăng ký")
         }
 
-        Text("Máy chủ: ${BuildConfig.API_BASE_URL}", style = MaterialTheme.typography.bodySmall)
+        Text("Máy chủ: ${DeviceInfo.apiBaseUrl}", style = MaterialTheme.typography.bodySmall)
     }
     }
 }

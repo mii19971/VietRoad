@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -18,6 +20,14 @@ android {
         // BuildConfig.API_BASE_URL: doc tu gradle.properties, code Kotlin dung duoc.
         val apiBaseUrl = (project.findProperty("vietroad.apiBaseUrl") as String?) ?: "http://10.0.2.2:5000/"
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+
+        // Dien thoai that khong goi duoc 10.0.2.2 (chi may ao hieu) -> can IP LAN cua may tinh.
+        // Doc tu local.properties (rieng tung may, khong dua len git). Chua khai bao -> dung chung apiBaseUrl.
+        val localProps = Properties().apply {
+            rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+        }
+        val deviceApiBaseUrl = localProps.getProperty("vietroad.deviceApiBaseUrl") ?: apiBaseUrl
+        buildConfigField("String", "DEVICE_API_BASE_URL", "\"$deviceApiBaseUrl\"")
 
         // Kieu ban do (style) MapLibre: mau sac, font + noi tai tile. Mac dinh OpenFreeMap (mien phi, khong can key).
         val mapStyleUrl = (project.findProperty("vietroad.mapStyleUrl") as String?)
