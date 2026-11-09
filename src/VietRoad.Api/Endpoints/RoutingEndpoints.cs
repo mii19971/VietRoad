@@ -1,6 +1,8 @@
 using VietRoad.Api.Models;
 using VietRoad.Api.Routing;
+using VietRoad.Api.Subscriptions;
 using VietRoad.Api.Utils;
+using VietRoad.Data;
 
 namespace VietRoad.Api.Endpoints;
 
@@ -12,7 +14,9 @@ public static class RoutingEndpoints
 {
     public static void MapRoutingEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/v1").RequireAuthorization();
+        // Chi duong la tinh nang cua goi Premium (xem Plans trong VietRoad.Data).
+        var group = app.MapGroup("/api/v1").RequireAuthorization()
+            .RequireFeature(Features.Navigation, "Chỉ đường dành cho gói Premium. Liên hệ quản trị viên để nâng cấp.");
 
         // GET /api/v1/places/search?q=Hồ Gươm&lat=21.03&lng=105.85
         group.MapGet("/places/search", SearchPlaces);

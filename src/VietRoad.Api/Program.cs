@@ -8,6 +8,7 @@ using VietRoad.Api.Auth;
 using VietRoad.Api.Endpoints;
 using VietRoad.Api.Routing;
 using VietRoad.Api.Services;
+using VietRoad.Api.Subscriptions;
 using VietRoad.Data;
 
 // ===== 1. Cau hinh (truoc khi app chay) =====
@@ -36,6 +37,7 @@ else
 // --- User Reports + Admin ---
 builder.Services.AddScoped<ReportService>();
 builder.Services.AddScoped<AdminService>();
+builder.Services.AddScoped<SubscriptionService>();
 
 // --- User Service + JWT ---
 // Doc muc "Jwt" thanh JwtOptions, kiem tra ngay khi khoi dong: thieu khoa -> dung luon, bao loi ro rang.
@@ -145,6 +147,7 @@ app.MapAuthEndpoints();
 app.MapReportEndpoints();
 app.MapAdminEndpoints();
 app.MapRoutingEndpoints();
+app.MapSubscriptionEndpoints();
 
 // ===== 3. Chay server =====
 app.Run();

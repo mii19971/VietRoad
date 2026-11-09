@@ -28,7 +28,18 @@ public record AlertUpsert(
 
 public record AdminUser(
     Guid Id, string Email, string DisplayName, string Role,
-    DateTimeOffset CreatedAt, DateTimeOffset? LastLoginAt, int ReportCount);
+    DateTimeOffset CreatedAt, DateTimeOffset? LastLoginAt, int ReportCount,
+    DateTimeOffset? PremiumUntil);   // null = goi Mien phi
+
+// ----- Goi dich vu -----
+
+public record SubscriptionInfo(string Plan, string PlanLabel, DateTimeOffset? ExpiresAt, List<string> Features);
+
+public record SubscriptionRecord(
+    int Id, string Plan, DateTimeOffset StartsAt, DateTimeOffset ExpiresAt, string Source, string? Note,
+    string? CreatedByEmail, DateTimeOffset CreatedAt, DateTimeOffset? CancelledAt, string Status);
+
+public record UserSubscriptions(SubscriptionInfo Current, List<SubscriptionRecord> History);
 
 public record AdminStats(
     int VisibleAlerts, int PendingReports, int HiddenAlerts, int InactiveAlerts,
@@ -54,4 +65,22 @@ public static class Labels
     };
 
     public static string Time(DateTimeOffset? t) => t?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "—";
+
+    public static string Date(DateTimeOffset? t) => t?.ToLocalTime().ToString("dd/MM/yyyy") ?? "—";
+
+    public static string Feature(string feature) => feature switch
+    {
+        "navigation" => "Chỉ đường bằng giọng nói",
+        "police_alerts" => "Cảnh báo chốt CSGT",
+        _ => feature,
+    };
+
+    public static string SubscriptionStatus(string status) => status switch
+    {
+        "active" => "Đang dùng",
+        "upcoming" => "Chờ tới lượt",
+        "expired" => "Hết hạn",
+        "cancelled" => "Đã hủy",
+        _ => status,
+    };
 }

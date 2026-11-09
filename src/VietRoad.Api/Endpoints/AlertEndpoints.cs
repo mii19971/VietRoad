@@ -1,6 +1,10 @@
-﻿using VietRoad.Api.Models;
+﻿using System.Security.Claims;
+using Microsoft.IdentityModel.JsonWebTokens;
+using VietRoad.Api.Models;
 using VietRoad.Api.Services;
+using VietRoad.Api.Subscriptions;
 using VietRoad.Api.Utils;
+using VietRoad.Data;
 
 namespace VietRoad.Api.Endpoints;
 
@@ -26,6 +30,7 @@ public static class AlertEndpoints
         double lat,
         double lng,
         IAlertService alertService,
+        HttpContext http,
         CancellationToken ct,
         double radius = 1000)
     {
@@ -35,7 +40,21 @@ public static class AlertEndpoints
         if (radius is <= 0 or > MaxRadiusM)
             return Results.BadRequest(new ErrorResponse($"radius phai trong (0, {MaxRadiusM}]"));
 
+        // API nay khong bat buoc dang nhap. Nhung NEU co gui token ma token sai / het han -> 401,
+        // de app biet ma lay token moi (neu khong se lang le bi coi nhu goi Mien phi).
+        var user = http.User;
+        if (http.Request.Headers.Authorization.Count > 0 && user.Identity?.IsAuthenticated != true)
+            return Results.Unauthorized();
+
         var alerts = await alertService.FindNearbyAsync(lat, lng, radius, ct);
+
+        // Chot CSGT chi danh cho goi co tinh nang PoliceAlerts (Premium).
+        var userId = user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        var seesPolice = userId is not null && await http.RequestServices.GetRequiredService<SubscriptionService>()
+            .HasFeatureAsync(Guid.Parse(userId), Features.PoliceAlerts, ct);
+        if (!seesPolice)
+            alerts = alerts.Where(a => a.Alert.Type != AlertTypes.PoliceCheckpoint).ToList();
+
         return Results.Ok(new NearbyAlertsResponse(alerts.Count, alerts));
     }
 }

@@ -32,7 +32,8 @@ public record AlertUpsertRequest(
 
 public record AdminUser(
     Guid Id, string Email, string DisplayName, string Role,
-    DateTimeOffset CreatedAt, DateTimeOffset? LastLoginAt, int ReportCount);
+    DateTimeOffset CreatedAt, DateTimeOffset? LastLoginAt, int ReportCount,
+    DateTimeOffset? PremiumUntil);   // null = goi Mien phi
 
 public record RoleChangeRequest(string? Role);
 

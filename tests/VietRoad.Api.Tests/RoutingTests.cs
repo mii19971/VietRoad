@@ -168,14 +168,25 @@ public class RoutingApiTests(RoutingTestFactory factory) : IClassFixture<Routing
 {
     private const string RouteUrl = "/api/v1/routes?fromLat=21.03&fromLng=105.85&toLat=21.02&toLng=105.84";
 
-    private async Task<HttpClient> UserClientAsync()
+    /// <summary>Nguoi dung moi; mac dinh co Premium (chi duong la tinh nang Premium).</summary>
+    private async Task<HttpClient> UserClientAsync(bool premium = true)
     {
         var client = factory.CreateClient();
         var res = await client.PostAsJsonAsync("/api/v1/auth/register",
             new RegisterRequest($"u-{Guid.NewGuid():N}@example.com", "matkhau123", null));
         var auth = await res.Content.ReadFromJsonAsync<AuthResponse>();
+        if (premium) await factory.GrantPremiumAsync(auth!.User.Id);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth!.AccessToken);
         return client;
+    }
+
+    [Fact]
+    public async Task Route_FreePlan_Returns403()
+    {
+        var res = await (await UserClientAsync(premium: false)).GetAsync(RouteUrl);
+        Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
+        var places = await (await UserClientAsync(premium: false)).GetAsync("/api/v1/places/search?q=ho");
+        Assert.Equal(HttpStatusCode.Forbidden, places.StatusCode);
     }
 
     [Fact]

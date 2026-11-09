@@ -67,6 +67,25 @@ data class ReportResponse(val alert: Alert, val created: Boolean)
 @Serializable
 data class ErrorBody(val error: String? = null)
 
+// ----- Goi dich vu -----
+
+/** Goi hien tai: plan = "free" | "premium"; features = tinh nang duoc dung (vd "navigation"). */
+@Serializable
+data class SubscriptionInfo(
+    val plan: String,
+    val planLabel: String,
+    val expiresAt: String? = null,   // ISO 8601, vd "2026-12-09T03:00:00+00:00"
+    val features: List<String> = emptyList(),
+) {
+    val isPremium get() = plan == "premium"
+    fun has(feature: String) = feature in features
+
+    companion object {
+        const val NAVIGATION = "navigation"
+        const val POLICE_ALERTS = "police_alerts"
+    }
+}
+
 // ----- Chi duong -----
 
 @Serializable

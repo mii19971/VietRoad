@@ -46,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.vietroad.app.data.AlertTypes
+import com.vietroad.app.data.SubscriptionInfo
+import androidx.compose.ui.graphics.Color
 import com.vietroad.app.drive.AheadAlert
 import com.vietroad.app.drive.Position
 
@@ -131,6 +133,7 @@ fun DriveScreen(
 private fun Header(state: UiState, onLogout: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(state.userName ?: "", style = MaterialTheme.typography.titleMedium)
+        state.subscription?.let { PlanBadge(it) }
         Spacer(Modifier.weight(1f))
         if (!state.online) Text("Mất mạng", color = MaterialTheme.colorScheme.error)
         TextButton(onClick = onLogout) { Text("Đăng xuất") }
@@ -160,6 +163,26 @@ private fun TrackingToggle(state: UiState, hasPermission: Boolean, onStart: () -
     }
 }
 
+/** Nhan goi canh ten: "Premium · đến 09/12/2026" hoac "Miễn phí". */
+@Composable
+private fun PlanBadge(sub: SubscriptionInfo) {
+    val text = if (sub.isPremium) "Premium" + (sub.expiresAt?.let { " · đến ${shortDate(it)}" } ?: "") else sub.planLabel
+    Surface(
+        modifier = Modifier.padding(start = 8.dp),
+        shape = RoundedCornerShape(8.dp),
+        color = if (sub.isPremium) Color(0xFFFFC107) else MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = if (sub.isPremium) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
+    ) {
+        Text(text, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+    }
+}
+
+/** "2026-12-09T03:00:00+00:00" -> "09/12/2026" (chi lay phan ngay; minSdk 21 chua co java.time). */
+private fun shortDate(iso: String): String {
+    val d = iso.take(10).split("-")
+    return if (d.size == 3) "${d[2]}/${d[1]}/${d[0]}" else iso
+}
+
 /** Dang chi duong: the chi dan. Chua: nut "Chi duong". */
 @Composable
 private fun NavigationBlock(state: UiState, hasPermission: Boolean, onOpenSearch: () -> Unit, onStop: () -> Unit) {
@@ -169,7 +192,8 @@ private fun NavigationBlock(state: UiState, hasPermission: Boolean, onOpenSearch
         NavCard(nav, onStop)
     } else {
         OutlinedButton(onClick = onOpenSearch, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-            Text("Chỉ đường", fontSize = 18.sp)
+            // Goi Mien phi: van bam duoc (app hoi lai server, co the vua duoc nang cap), kem nhan Premium.
+            Text(if (state.canNavigate) "Chỉ đường" else "Chỉ đường · 🔒 Premium", fontSize = 18.sp)
         }
     }
 }

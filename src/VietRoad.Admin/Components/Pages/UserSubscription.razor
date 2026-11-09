@@ -1,0 +1,150 @@
+@page "/users/{Id:guid}/subscription"
+@attribute [Authorize(Roles = "admin")]
+@inherits AdminPageBase
+
+<PageTitle>Gói dịch vụ - VietRoad Admin</PageTitle>
+
+<p><a href="users">← Người dùng</a></p>
+<h1 class="h3 mb-3">Gói dịch vụ</h1>
+
+@if (Message is not null)
+{
+    <div class="alert @(MessageIsError ? "alert-danger" : "alert-success")">@Message</div>
+}
+
+@if (loaded && data is null)
+{
+    <div class="alert alert-warning">Không tìm thấy người dùng.</div>
+}
+else if (data is not null)
+{
+    var current = data.Current;
+
+    <div class="card mb-4" style="max-width: 640px">
+        <div class="card-body">
+            <h2 class="h5">
+                Gói hiện tại:
+                @if (current.Plan == "premium")
+                {
+                    <span class="badge bg-warning text-dark">Premium</span>
+                    <small class="text-muted">đến @Labels.Time(current.ExpiresAt)</small>
+                }
+                else
+                {
+                    <span class="badge bg-light text-dark border">Miễn phí</span>
+                }
+            </h2>
+            <p class="mb-1 text-muted">Tính năng đang được dùng:</p>
+            @if (current.Features.Count == 0)
+            {
+                <p class="mb-0">Chỉ các tính năng cơ bản (cảnh báo camera, bản đồ, báo cáo).</p>
+            }
+            else
+            {
+                <ul class="mb-0">
+                    @foreach (var f in current.Features) { <li>@Labels.Feature(f)</li> }
+                </ul>
+            }
+        </div>
+    </div>
+
+    <h2 class="h5">Kích hoạt / gia hạn Premium</h2>
+    <p class="text-muted small">
+        Đang có Premium thì lần này nối tiếp ngay sau ngày hết hạn hiện tại (không mất ngày nào).
+        Chưa có cổng thanh toán: quản trị viên kích hoạt sau khi khách đã trả tiền / được tặng.
+    </p>
+    <form method="post" @formname="grant" @onsubmit="GrantAsync" class="row g-2 mb-4" style="max-width: 640px">
+        <AntiforgeryToken />
+        <div class="col-sm-3">
+            <select name="Grant.Days" class="form-select">
+                <option value="30">30 ngày</option>
+                <option value="90">90 ngày</option>
+                <option value="180">180 ngày</option>
+                <option value="365">1 năm</option>
+            </select>
+        </div>
+        <div class="col-sm-6">
+            <input name="Grant.Note" class="form-control" maxlength="500" placeholder="Ghi chú (vd: đã chuyển khoản 99k)" />
+        </div>
+        <div class="col-sm-3"><button class="btn btn-warning w-100">Kích hoạt</button></div>
+    </form>
+
+    <h2 class="h5">Lịch sử</h2>
+    @if (data.History.Count == 0)
+    {
+        <p class="text-muted">Chưa kích hoạt lần nào.</p>
+    }
+    else
+    {
+        <form method="post" @formname="cancel" @onsubmit="CancelAsync">
+            <AntiforgeryToken />
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr><th>Gói</th><th>Từ</th><th>Đến</th><th>Trạng thái</th><th>Nguồn</th><th>Người kích hoạt</th><th>Ghi chú</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in data.History)
+                    {
+                        <tr class="@(s.Status is "cancelled" or "expired" ? "text-muted" : "")">
+                            <td>@(s.Plan == "premium" ? "Premium" : s.Plan)</td>
+                            <td>@Labels.Time(s.StartsAt)</td>
+                            <td>@Labels.Time(s.ExpiresAt)</td>
+                            <td>@Labels.SubscriptionStatus(s.Status)</td>
+                            <td>@s.Source</td>
+                            <td>@(s.CreatedByEmail ?? "—")</td>
+                            <td>@s.Note</td>
+                            <td>
+                                @if (s.Status is "active" or "upcoming")
+                                {
+                                    <button name="CancelId" value="@s.Id" class="btn btn-outline-danger btn-sm"
+                                            onclick="return confirm('Hủy lần kích hoạt này?')">Hủy</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </form>
+    }
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    [SupplyParameterFromForm(FormName = "grant")] private GrantForm? Grant { get; set; }
+    [SupplyParameterFromForm(FormName = "cancel")] private int? CancelId { get; set; }
+
+    private UserSubscriptions? data;
+    private bool loaded;
+
+    protected override Task OnInitializedAsync() => RunAsync(LoadAsync);
+
+    private Task GrantAsync() => RunAsync(async () =>
+    {
+        var days = Grant?.Days ?? 30;
+        var res = await Api.GrantSubscriptionAsync(Id, "premium", days, Grant?.Note);
+        Show(res.Error, $"Đã kích hoạt Premium {days} ngày (đến {Labels.Time(res.Value?.ExpiresAt)}). " +
+                        "App của người dùng cập nhật khi mở lại hoặc đăng nhập lại.");
+        await LoadAsync();
+    });
+
+    private Task CancelAsync() => RunAsync(async () =>
+    {
+        if (CancelId is not { } id) return;
+        var res = await Api.CancelSubscriptionAsync(id);
+        Show(res.Error, "Đã hủy.");
+        await LoadAsync();
+    });
+
+    private async Task LoadAsync()
+    {
+        data = await Api.GetSubscriptionsAsync(Id);
+        loaded = true;
+    }
+
+    private class GrantForm
+    {
+        public int Days { get; set; } = 30;
+        public string? Note { get; set; }
+    }
+}

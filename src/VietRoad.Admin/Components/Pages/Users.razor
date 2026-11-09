@@ -24,7 +24,7 @@
         <AntiforgeryToken />
         <table class="table table-sm table-hover align-middle">
             <thead>
-                <tr><th>Email</th><th>Tên</th><th>Quyền</th><th>Số báo cáo</th><th>Đăng ký</th><th>Đăng nhập gần nhất</th><th></th></tr>
+                <tr><th>Email</th><th>Tên</th><th>Quyền</th><th>Gói</th><th>Số báo cáo</th><th>Đăng ký</th><th>Đăng nhập gần nhất</th><th></th></tr>
             </thead>
             <tbody>
                 @foreach (var u in result.Items)
@@ -35,6 +35,18 @@
                         <td>
                             @if (u.Role == "admin") { <span class="badge bg-danger">admin</span> }
                             else { <span class="badge bg-light text-dark">user</span> }
+                        </td>
+                        <td>
+                            <a href="users/@u.Id/subscription" title="Quản lý gói">
+                                @if (u.PremiumUntil is not null)
+                                {
+                                    <span class="badge bg-warning text-dark">Premium đến @Labels.Date(u.PremiumUntil)</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-dark border">Miễn phí</span>
+                                }
+                            </a>
                         </td>
                         <td>@u.ReportCount</td>
                         <td>@Labels.Time(u.CreatedAt)</td>

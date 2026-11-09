@@ -16,6 +16,7 @@ public class VietRoadDbContext(DbContextOptions<VietRoadDbContext> options) : Db
     public DbSet<UserEntity> Users => Set<UserEntity>();
     public DbSet<RefreshTokenEntity> RefreshTokens => Set<RefreshTokenEntity>();
     public DbSet<AlertVoteEntity> AlertVotes => Set<AlertVoteEntity>();
+    public DbSet<SubscriptionEntity> Subscriptions => Set<SubscriptionEntity>();
 
     // Mo ta cau truc bang. Migration duoc sinh ra tu day.
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -127,6 +128,31 @@ public class VietRoadDbContext(DbContextOptions<VietRoadDbContext> options) : Db
             e.HasOne(t => t.User)
                 .WithMany(u => u.RefreshTokens)
                 .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SubscriptionEntity>(e =>
+        {
+            e.ToTable("subscriptions");
+            e.Property(s => s.Id).HasColumnName("id");
+            e.Property(s => s.UserId).HasColumnName("user_id");
+            e.Property(s => s.Plan).HasColumnName("plan").HasMaxLength(32);
+            e.Property(s => s.StartsAt).HasColumnName("starts_at");
+            e.Property(s => s.ExpiresAt).HasColumnName("expires_at");
+            e.Property(s => s.Source).HasColumnName("source").HasMaxLength(32);
+            e.Property(s => s.Note).HasColumnName("note").HasMaxLength(500);
+            e.Property(s => s.CreatedByUserId).HasColumnName("created_by_user_id");
+            e.Property(s => s.CreatedAt).HasColumnName("created_at");
+            e.Property(s => s.CancelledAt).HasColumnName("cancelled_at");
+            e.Property(s => s.CancelledByUserId).HasColumnName("cancelled_by_user_id");
+
+            // Tim goi hien tai cua 1 nguoi: loc theo user_id + thoi han.
+            e.HasIndex(s => new { s.UserId, s.ExpiresAt });
+
+            // Xoa user thi xoa luon lich su goi cua ho.
+            e.HasOne<UserEntity>()
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

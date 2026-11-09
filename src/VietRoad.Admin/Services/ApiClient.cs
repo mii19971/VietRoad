@@ -95,6 +95,21 @@ public class ApiClient(HttpClient http)
     public Task<ApiResult<bool>> SetRoleAsync(Guid userId, string role) =>
         SendAsync<bool>(http.PutAsJsonAsync($"api/v1/admin/users/{userId}/role", new { role }));
 
+    // ----- Goi dich vu -----
+
+    /// <summary>Goi hien tai + lich su. null = khong co nguoi dung nay.</summary>
+    public async Task<UserSubscriptions?> GetSubscriptionsAsync(Guid userId)
+    {
+        var res = await http.GetAsync($"api/v1/admin/users/{userId}/subscriptions");
+        return res.StatusCode == HttpStatusCode.NotFound ? null : await ReadAsync<UserSubscriptions>(res);
+    }
+
+    public Task<ApiResult<SubscriptionRecord>> GrantSubscriptionAsync(Guid userId, string plan, int days, string? note) =>
+        SendAsync<SubscriptionRecord>(http.PostAsJsonAsync($"api/v1/admin/users/{userId}/subscriptions", new { plan, days, note }));
+
+    public Task<ApiResult<bool>> CancelSubscriptionAsync(int subscriptionId) =>
+        SendAsync<bool>(http.PostAsync($"api/v1/admin/subscriptions/{subscriptionId}/cancel", null));
+
     // ----- Ham phu -----
 
     private async Task<T> GetAsync<T>(string url) => await ReadAsync<T>(await http.GetAsync(url));

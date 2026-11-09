@@ -50,6 +50,20 @@ public class TestAppFactory : WebApplicationFactory<Program>
         return host;
     }
 
+    /// <summary>Kich hoat Premium thang trong database (test khong can di qua API admin).</summary>
+    public async Task GrantPremiumAsync(Guid userId, int days = 30)
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<VietRoadDbContext>();
+        var now = DateTimeOffset.UtcNow;
+        db.Subscriptions.Add(new SubscriptionEntity
+        {
+            UserId = userId, Plan = Plans.Premium, StartsAt = now.AddMinutes(-1), ExpiresAt = now.AddDays(days),
+            Source = SubscriptionSources.Admin, CreatedAt = now,
+        });
+        await db.SaveChangesAsync();
+    }
+
     private static AlertEntity Sample(int id, string type, double lat, double lng, string name) => new()
     {
         Id = id, Type = type, Lat = lat, Lng = lng, Name = name,

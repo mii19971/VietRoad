@@ -10,6 +10,7 @@ import com.vietroad.app.data.AlertTypes
 import com.vietroad.app.data.ApiException
 import com.vietroad.app.data.AuthResponse
 import com.vietroad.app.data.Place
+import com.vietroad.app.data.SubscriptionInfo
 import com.vietroad.app.drive.NavState
 import com.vietroad.app.data.ReportRequest
 import com.vietroad.app.drive.AheadAlert
@@ -38,7 +39,11 @@ data class UiState(
     val nav: NavState? = null,
     // Man hinh tim diem den (null = dang o man hinh lai xe).
     val search: SearchUi? = null,
-)
+    // Goi dich vu (null = chua tai xong). Quyet dinh tinh nang nao duoc dung.
+    val subscription: SubscriptionInfo? = null,
+) {
+    val canNavigate get() = subscription?.has(SubscriptionInfo.NAVIGATION) == true
+}
 
 data class SearchUi(
     val originName: String? = null,  // dia chi vi tri hien tai (null = dang tra / khong biet)
@@ -76,6 +81,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
+        if (session.isLoggedIn) refreshSubscription()
+    }
+
+    // ---------- Goi dich vu ----------
+
+    /** Tai goi hien tai (sau khi dang nhap / mo app). Loi mang thi giu gia tri cu. */
+    fun refreshSubscription() {
+        viewModelScope.launch { loadSubscription() }
+    }
+
+    private suspend fun loadSubscription(): SubscriptionInfo? {
+        val sub = runCatching { api.subscription() }.getOrNull() ?: return _state.value.subscription
+        _state.update { it.copy(subscription = sub) }
+        return sub
     }
 
     // ---------- Dang nhap ----------
@@ -92,6 +111,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val auth = call()
                 session.save(auth)
                 _state.update { it.copy(busy = false, loggedIn = true, userName = auth.user.displayName) }
+                loadSubscription()
             } catch (e: Exception) {
                 _state.update { it.copy(busy = false, message = e.toUserMessage()) }
             }
@@ -131,7 +151,19 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---------- Chi duong ----------
 
+    /**
+     * Bam "Chi duong". Chi duong la tinh nang Premium: chua co thi hoi lai server 1 lan
+     * (co the admin vua kich hoat), van chua co thi bao cho tai xe.
+     */
     fun openSearch() {
+        if (_state.value.canNavigate) return showSearch()
+        viewModelScope.launch {
+            if (loadSubscription()?.has(SubscriptionInfo.NAVIGATION) == true) showSearch()
+            else showMessage(PREMIUM_NAVIGATION_MESSAGE)
+        }
+    }
+
+    private fun showSearch() {
         val position = _state.value.position
         _state.update { it.copy(search = SearchUi(originLoading = position != null), message = null) }
 
@@ -235,5 +267,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         is ApiException -> message ?: "Lỗi máy chủ"
         is IOException -> "Không kết nối được máy chủ ${DeviceInfo.apiBaseUrl}"
         else -> "Lỗi: $message"
+    }
+
+    private companion object {
+        const val PREMIUM_NAVIGATION_MESSAGE =
+            "Chỉ đường bằng giọng nói dành cho gói Premium. Liên hệ quản trị viên để nâng cấp."
     }
 }

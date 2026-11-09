@@ -52,7 +52,12 @@ class ApiClient(private val baseUrl: String, private val session: SessionStore) 
 
     suspend fun nearby(lat: Double, lng: Double, radiusM: Int): NearbyAlertsResponse =
         // Double.toString cua Kotlin luon dung dau ".", khong phu thuoc ngon ngu may.
-        get("api/v1/alerts/nearby?lat=$lat&lng=$lng&radius=$radiusM")
+        // Gui kem token (neu da dang nhap): goi Premium moi nhan duoc chot CSGT.
+        get("api/v1/alerts/nearby?lat=$lat&lng=$lng&radius=$radiusM", auth = session.accessToken != null)
+
+    // ----- Goi dich vu -----
+
+    suspend fun subscription(): SubscriptionInfo = get("api/v1/users/me/subscription", auth = true)
 
     suspend fun report(request: ReportRequest): ReportResponse =
         post("api/v1/reports", json.encodeToString(request), auth = true)

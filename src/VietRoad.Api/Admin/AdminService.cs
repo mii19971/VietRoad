@@ -153,6 +153,7 @@ public class AdminService(VietRoadDbContext db, TimeProvider time)
         var total = await query.CountAsync(ct);
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, MaxPageSize);
+        var now = time.GetUtcNow();
 
         var items = await query
             .OrderByDescending(u => u.CreatedAt)
@@ -160,7 +161,11 @@ public class AdminService(VietRoadDbContext db, TimeProvider time)
             .Take(pageSize)
             .Select(u => new AdminUser(
                 u.Id, u.Email, u.DisplayName, u.Role, u.CreatedAt, u.LastLoginAt,
-                db.Alerts.Count(a => a.CreatedByUserId == u.Id))) // EF dich thanh sub-query COUNT
+                db.Alerts.Count(a => a.CreatedByUserId == u.Id), // EF dich thanh sub-query COUNT
+                // Premium con han toi khi nao (tinh ca cac lan gia han noi tiep); null = Mien phi.
+                db.Subscriptions
+                    .Where(s => s.UserId == u.Id && s.Plan == Plans.Premium && s.CancelledAt == null && s.ExpiresAt > now)
+                    .Max(s => (DateTimeOffset?)s.ExpiresAt)))
             .ToListAsync(ct);
 
         return new PagedResult<AdminUser>(items, total, page, pageSize);
