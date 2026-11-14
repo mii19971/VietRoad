@@ -141,6 +141,7 @@ object AlertTypes {
     const val TOLL_BOOTH = "toll_booth"           // tram thu phi, tu OSM
     const val RAILWAY_CROSSING = "railway_crossing" // duong ngang duong sat, tu OSM
     const val SPEED_BUMP = "speed_bump"           // go / vach giam toc, tu OSM
+    const val SCHOOL_ZONE = "school_zone"         // khu vuc truong hoc, tu OSM
 
     fun label(type: String): String = when (type) {
         SPEED_CAMERA -> "Camera tốc độ"
@@ -151,6 +152,7 @@ object AlertTypes {
         TOLL_BOOTH -> "Trạm thu phí"
         RAILWAY_CROSSING -> "Đường ngang đường sắt"
         SPEED_BUMP -> "Gờ giảm tốc"
+        SCHOOL_ZONE -> "Khu vực trường học"
         else -> type
     }
 
@@ -168,6 +170,6 @@ object AlertTypes {
      */
     fun hasRoadAxis(type: String): Boolean = type == RAILWAY_CROSSING || type == SPEED_BUMP
 
-    /** Loai "nho": chi doc 1 lan khi da gan (doc tu xa moi go giam toc thi qua on). */
-    fun announceOnlyWhenNear(type: String): Boolean = type == SPEED_BUMP
+    /** Loai "nho": chi doc 1 lan khi da gan (doc tu xa moi go giam toc / truong hoc thi qua on). */
+    fun announceOnlyWhenNear(type: String): Boolean = type == SPEED_BUMP || type == SCHOOL_ZONE
 }

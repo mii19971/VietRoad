@@ -70,6 +70,19 @@ public class OverpassClient(HttpClient http)
     public Task<OsmResponse> FetchVietnamHazardsAsync(string endpoint, CancellationToken ct = default) =>
         QueryAsync(endpoint, VietnamHazardsQuery, ct);
 
+    // Truong hoc: node, way (vung) va relation. "out center" -> way/relation tra ve 1 diem giua,
+    // node tra ve toa do cua no -> tat ca thanh 1 diem de bao "khu vuc truong hoc".
+    private const string VietnamSchoolsQuery = """
+        [out:json][timeout:180];
+        area["ISO3166-1"="VN"][admin_level=2]->.vn;
+        nwr["amenity"="school"](area.vn);
+        out center;
+        """;
+
+    /// <summary>Truong hoc tren ca nuoc (de bao "khu vuc truong hoc, chu y tre em").</summary>
+    public Task<OsmResponse> FetchVietnamSchoolsAsync(string endpoint, CancellationToken ct = default) =>
+        QueryAsync(endpoint, VietnamSchoolsQuery, ct);
+
     /// <summary>
     /// Cac loai duong lay gioi han toc do. Tai TUNG LOAI 1 lan: hoi tat ca cung luc qua nang,
     /// may chu Overpass cong cong tra 504.
@@ -86,7 +99,10 @@ public class OverpassClient(HttpClient http)
             out tags geom;
             """, ct);
 
-    /// <summary>Gui truy van; may chu ban (429/502/503/504) -> doi roi thu lai, toi da 3 lan.</summary>
+    /// <summary>
+    /// Gui truy van; may chu ban (429/502/503/504) hoac het gio cho (Overpass dang qua tai) ->
+    /// doi roi thu lai, toi da 4 lan. ct la huy that su cua nguoi dung -> khong thu lai.
+    /// </summary>
     private async Task<OsmResponse> QueryAsync(string endpoint, string query, CancellationToken ct)
     {
         for (var attempt = 1; ; attempt++)
@@ -95,7 +111,12 @@ public class OverpassClient(HttpClient http)
             {
                 return await QueryOnceAsync(endpoint, query, ct);
             }
-            catch (HttpRequestException ex) when (attempt < 3 && (int?)ex.StatusCode is 429 or >= 502 and <= 504)
+            catch (HttpRequestException ex) when (attempt < 4 && (int?)ex.StatusCode is 429 or >= 502 and <= 504)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(30 * attempt), ct);
+            }
+            // Het gio cho (timeout cua HttpClient) nem TaskCanceledException ma ct CHUA bi huy.
+            catch (TaskCanceledException) when (attempt < 4 && !ct.IsCancellationRequested)
             {
                 await Task.Delay(TimeSpan.FromSeconds(30 * attempt), ct);
             }

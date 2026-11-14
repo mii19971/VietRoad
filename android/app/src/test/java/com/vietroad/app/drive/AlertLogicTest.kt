@@ -136,4 +136,23 @@ class AlertLogicTest {
         // Xe re vao ngo, di huong Tay (270) ve phia duong ngang -> bao (chieu nao cung duoc).
         assertEquals(1, AlertLogic.ahead(listOf(crossing), carLat + 0.0018, carLng + 0.0012, heading = 270.0).size)
     }
+
+    @Test
+    fun railwayCrossing_onParallelAlley_ignored() {
+        // Di huong Tay. Duong ngang tren ngo song song (cung truc Dong - Tay) cach ~250 m ve phia Nam, xa ~450 m.
+        val alley = Alert(id = 6, type = "railway_crossing", lat = carLat - 0.00225, lng = carLng - 0.0040,
+            name = "Đường ngang đường sắt", source = "osm", direction = 92.0)
+        val onMyRoad = alley.copy(id = 5, lat = carLat + 0.0001)
+        val ahead = AlertLogic.ahead(listOf(alley, onMyRoad), carLat, carLng, heading = 270.0)
+        assertEquals(listOf(5), ahead.map { it.alert.id })
+    }
+
+    @Test
+    fun schoolZone_announcedOnlyWhenNear_generic() {
+        val school = Alert(id = 4, type = "school_zone", lat = carLat, lng = carLng,
+            name = "Trường Tiểu học Văn Miếu", source = "osm")
+        val policy = AnnouncementPolicy()
+        assertNull(policy.next(AheadAlert(school, 400)))                 // xa: khong doc
+        assertEquals("Sắp tới Khu vực trường học", policy.next(AheadAlert(school, 140)))  // doc chung, khong doc ten truong
+    }
 }

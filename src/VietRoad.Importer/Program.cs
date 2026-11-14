@@ -80,7 +80,8 @@ var cameraData = await overpassClient.FetchVietnamCamerasAsync(overpassEndpoint)
 // Truy van rieng (gop chung 1 lan qua nang, de bi 504). Loi -> dung han, KHONG ghi: neu chi co
 // camera ma ghi vao, buoc "an diem khong con tren OSM" se an nham het duong ngang / go giam toc.
 var hazardData = await overpassClient.FetchVietnamHazardsAsync(overpassEndpoint);
-var osm = new OsmResponse([.. cameraData.Elements, .. hazardData.Elements]);
+var schoolData = await overpassClient.FetchVietnamSchoolsAsync(overpassEndpoint);
+var osm = new OsmResponse([.. cameraData.Elements, .. hazardData.Elements, .. schoolData.Elements]);
 
 // ===== 3. Chuyen sang dang cua VietRoad =====
 var result = OsmAlertMapper.Map(osm);

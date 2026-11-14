@@ -262,6 +262,7 @@ class MapController(context: Context) {
                 Expression.stop(AlertTypes.TOLL_BOOTH, Expression.color(Color.parseColor("#2E7D32"))),
                 Expression.stop(AlertTypes.RAILWAY_CROSSING, Expression.color(Color.parseColor("#212121"))),
                 Expression.stop(AlertTypes.SPEED_BUMP, Expression.color(Color.parseColor("#F9A825"))),
+                Expression.stop(AlertTypes.SCHOOL_ZONE, Expression.color(Color.parseColor("#00897B"))),
             )),
             PropertyFactory.circleStrokeColor("#FFFFFF"), PropertyFactory.circleStrokeWidth(2f),
         ))

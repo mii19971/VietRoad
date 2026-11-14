@@ -3,6 +3,7 @@ package com.vietroad.app.drive
 import com.vietroad.app.data.Alert
 import com.vietroad.app.data.AlertTypes
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 /** 1 canh bao kem khoang cach tinh tu vi tri HIEN TAI cua xe. */
 data class AheadAlert(val alert: Alert, val distanceM: Int)
@@ -23,6 +24,12 @@ object AlertLogic {
 
     /** Diem co truc duong (duong ngang, go giam toc): xe phai chay lech truc <= 45 do (chieu nao cung duoc). */
     const val ROAD_AXIS_DEG = 45.0
+
+    /**
+     * Diem co truc duong phai nam gan "duong thang phia truoc mui xe": lech ngang <= 60 m.
+     * Chan duong ngang tren ngo SONG SONG cach vai tram met (cung huong, van nam trong hinh non 60 do).
+     */
+    const val ROAD_AXIS_MAX_OFFSET_M = 60.0
 
     /** Rat gan (dang di qua) thi luon tinh, du goc lech bao nhieu. */
     private const val PASSING_DISTANCE_M = 30.0
@@ -50,7 +57,11 @@ object AlertLogic {
                 val sameDirection = alert.direction == null || AlertTypes.hasRoadAxis(alert.type) ||
                     Geo.angleDifference(alert.direction, heading) <= SAME_DIRECTION_DEG
 
-                isAhead && sameDirection
+                // 3. Diem tren duong: phai nam ngay tren huong di, khong phai o duong song song ben canh.
+                val onMyLine = !AlertTypes.hasRoadAxis(alert.type) ||
+                    distance * sin(Math.toRadians(Geo.angleDifference(bearingToAlert, heading))) <= ROAD_AXIS_MAX_OFFSET_M
+
+                isAhead && sameDirection && onMyLine
             }
             .sortedBy { it.second }
             .map { (alert, distance) -> AheadAlert(alert, distance.roundToInt()) }

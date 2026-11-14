@@ -128,16 +128,31 @@ public static partial class OsmAlertMapper
         var crossingPoints = Deduplicate(crossings, CrossingMergeRadiusM, checkDirection: false);
         var bumpPoints = Deduplicate(bumps, BumpMergeRadiusM, checkDirection: false);
 
-        var merged = byNodeId.Count + fromRelations.Count - cameras.Count + tolls.Count - tollStations.Count
-                   + crossings.Count - crossingPoints.Count + bumps.Count - bumpPoints.Count;
+        // 6. Truong hoc (node / way / relation, lay 1 diem). Khong co huong (bao moi phia). Nhieu truong
+        //    sat nhau (vd mam non + tieu hoc + THCS 1 cum) gop thanh 1 "khu vuc" de khong doc lien tuc.
+        var schools = new List<ImportedAlert>();
+        foreach (var e in response.Elements.Where(e => Tag(e, "amenity") == "school"))
+        {
+            var lat = e.Lat ?? e.Center?.Lat;
+            var lng = e.Lon ?? e.Center?.Lon;
+            if (lat is null || lng is null) continue;
+            schools.Add(new ImportedAlert($"osm:{e.Type}/{e.Id}", AlertTypes.SchoolZone,
+                NameOf(e.Tags, AlertTypes.SchoolZone), lat.Value, lng.Value, SpeedLimit: null, Direction: null));
+        }
+        var schoolZones = Deduplicate(schools, SchoolMergeRadiusM, checkDirection: false);
 
-        return new MapResult([.. cameras, .. tollStations, .. crossingPoints, .. bumpPoints], skipped, merged);
+        var merged = byNodeId.Count + fromRelations.Count - cameras.Count + tolls.Count - tollStations.Count
+                   + crossings.Count - crossingPoints.Count + bumps.Count - bumpPoints.Count
+                   + schools.Count - schoolZones.Count;
+
+        return new MapResult([.. cameras, .. tollStations, .. crossingPoints, .. bumpPoints, .. schoolZones], skipped, merged);
     }
 
     public const double CameraMergeRadiusM = 30;
     public const double TollMergeRadiusM = 150;
     public const double CrossingMergeRadiusM = 50;
     public const double BumpMergeRadiusM = 100;
+    public const double SchoolMergeRadiusM = 120;
 
     public const string RumbleStripName = "Vạch giảm tốc";
     public const string UnguardedCrossingName = "Đường ngang không có rào chắn";

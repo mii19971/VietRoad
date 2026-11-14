@@ -77,6 +77,9 @@ public static class AlertTypes
     /// <summary>Go giam toc / vach son giam toc. Chi tu OSM / admin.</summary>
     public const string SpeedBump = "speed_bump";
 
+    /// <summary>Khu vuc truong hoc (chu y tre em). Chi tu OSM / admin.</summary>
+    public const string SchoolZone = "school_zone";
+
     /// <summary>Cac loai nguoi dung duoc phep bao cao.</summary>
     public static readonly IReadOnlySet<string> UserReportable =
         new HashSet<string> { SpeedCamera, RedLightCamera, AverageSpeedCamera, PoliceCheckpoint };
@@ -94,6 +97,7 @@ public static class AlertTypes
         TollBooth => "Trạm thu phí",
         RailwayCrossing => "Đường ngang đường sắt",
         SpeedBump => "Gờ giảm tốc",
+        SchoolZone => "Khu vực trường học",
         _ => "Camera tốc độ",
     };
 }

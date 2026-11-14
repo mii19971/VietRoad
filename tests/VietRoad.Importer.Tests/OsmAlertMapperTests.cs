@@ -270,4 +270,25 @@ public class OsmAlertMapperTests
         Assert.Equal(90, alerts.Single(a => a.Type == AlertTypes.RailwayCrossing).Direction);
         Assert.Null(alerts.Single(a => a.Type == AlertTypes.SpeedBump).Direction);
     }
+
+    [Fact]
+    public void Schools_NodeWayRelation_Mapped_NearbyMerged()
+    {
+        var osm = new OsmResponse([
+            Node(1, 21.00000, 105.80000, new() { ["amenity"] = "school", ["name"] = "Trường THCS A" }),
+            // Way (vung) co diem giua cach ~60 m -> gop vao cum "khu vuc truong hoc".
+            new OsmElement("way", 2, null, null, new() { ["amenity"] = "school", ["name"] = "Trường Tiểu học B" }, null,
+                Center: new OsmCenter(21.00054, 105.80000)),
+            new OsmElement("relation", 3, null, null, new() { ["amenity"] = "school" }, null,
+                Center: new OsmCenter(21.10000, 105.80000)),  // xa 11 km -> truong khac
+        ]);
+
+        var result = OsmAlertMapper.Map(osm);
+        var zones = result.Alerts.Where(a => a.Type == AlertTypes.SchoolZone).ToList();
+        Assert.Equal(2, zones.Count);
+        Assert.Equal(1, result.Merged);
+        Assert.All(zones, z => Assert.Null(z.Direction));          // bao moi phia
+        Assert.Contains(zones, z => z.Name == "Trường THCS A");    // cum gan giu ten truong co ten
+        Assert.Contains(zones, z => z.Name == "Khu vực trường học"); // relation khong ten -> mac dinh
+    }
 }
