@@ -31,6 +31,14 @@ public record AdminUser(
     DateTimeOffset CreatedAt, DateTimeOffset? LastLoginAt, int ReportCount,
     DateTimeOffset? PremiumUntil);   // null = goi Mien phi
 
+// ----- Nhap hang loat -----
+
+public record AlertImportRow(
+    int Row, string Status, string? Message, string? Type, string? Name, double? Lat, double? Lng,
+    int? SpeedLimit, double? Direction, int? ExistingId, int? CreatedId);
+
+public record AlertImportResult(int Total, int Valid, int Duplicates, int Errors, int Created, List<AlertImportRow> Rows);
+
 // ----- Goi dich vu -----
 
 public record SubscriptionInfo(string Plan, string PlanLabel, DateTimeOffset? ExpiresAt, List<string> Features);

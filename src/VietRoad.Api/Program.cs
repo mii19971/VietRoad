@@ -38,6 +38,7 @@ else
 builder.Services.AddScoped<ReportService>();
 builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<SubscriptionService>();
+builder.Services.AddScoped<AlertImportService>();
 
 // --- User Service + JWT ---
 // Doc muc "Jwt" thanh JwtOptions, kiem tra ngay khi khoi dong: thieu khoa -> dung luon, bao loi ro rang.

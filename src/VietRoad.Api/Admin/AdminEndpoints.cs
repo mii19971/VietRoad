@@ -25,6 +25,9 @@ public static class AdminEndpoints
         admin.MapPost("/alerts/{id:int}/approve", Approve);
         admin.MapPost("/alerts/{id:int}/reject", Reject);
 
+        // POST /api/v1/admin/alerts/import  { "rows": [ { "Loại": "Camera tốc độ", "Tọa độ": "21.03, 105.85" } ], "dryRun": true }
+        admin.MapPost("/alerts/import", ImportAlerts);
+
         admin.MapGet("/users", ListUsers);
         admin.MapPut("/users/{id:guid}/role", SetRole);
     }
@@ -78,6 +81,17 @@ public static class AdminEndpoints
 
     private static async Task<IResult> Reject(int id, AdminService s, CancellationToken ct) =>
         await s.RejectAsync(id, ct) == AdminResult.Ok ? Results.Ok(await s.GetAlertAsync(id, ct)) : NotFound();
+
+    private static async Task<IResult> ImportAlerts(
+        AlertImportRequest req, ClaimsPrincipal user, AlertImportService s, CancellationToken ct)
+    {
+        if (req.Rows is null || req.Rows.Count == 0)
+            return BadRequest("File không có dòng dữ liệu nào");
+        if (req.Rows.Count > AlertImportService.MaxRows)
+            return BadRequest($"Tối đa {AlertImportService.MaxRows} dòng mỗi lần nhập (file có {req.Rows.Count} dòng)");
+
+        return Results.Ok(await s.ImportAsync(req.Rows, req.DryRun, UserId(user), ct));
+    }
 
     private static async Task<IResult> ListUsers(
         AdminService s, CancellationToken ct, string? q = null, int page = 1, int pageSize = 20) =>

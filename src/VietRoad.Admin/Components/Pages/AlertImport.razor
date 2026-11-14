@@ -1,0 +1,186 @@
+@page "/alerts/import"
+@attribute [Authorize(Roles = "admin")]
+@inherits AdminPageBase
+@using System.Text.Json
+
+<PageTitle>Nhập hàng loạt - VietRoad Admin</PageTitle>
+
+<h1 class="h3 mb-3">Nhập cảnh báo hàng loạt</h1>
+
+@if (Message is not null)
+{
+    <div class="alert @(MessageIsError ? "alert-danger" : "alert-success")">@Message</div>
+}
+
+@if (preview is null)
+{
+    <div class="card mb-4" style="max-width: 760px">
+        <div class="card-body">
+            <p class="mb-2">Tải lên file <b>Excel (.xlsx)</b> hoặc <b>CSV (UTF-8)</b>, dòng đầu là tên cột:</p>
+            <ul class="small mb-2">
+                <li><b>Loại</b> (bắt buộc): Camera tốc độ, Camera đèn đỏ, Camera tốc độ trung bình, Camera phạt nguội / giám sát, Trạm thu phí.</li>
+                <li><b>Tọa độ</b>: dán từ Google Maps, vd <code>21.028511, 105.854164</code> — hoặc 2 cột <b>Vĩ độ</b> và <b>Kinh độ</b>.</li>
+                <li>Không bắt buộc: <b>Tên</b>, <b>Giới hạn tốc độ</b> (km/h), <b>Hướng</b> (độ, 0 = Bắc, 90 = Đông). Cột khác (STT, Ghi chú…) được bỏ qua.</li>
+            </ul>
+            <p class="small text-muted mb-3">
+                Cảnh báo nhập vào có nguồn <b>admin</b> (độ tin cậy 90, coi như đã duyệt). Dòng trùng với cảnh báo đã có
+                (cùng loại, cách dưới 50 m, cùng hướng) sẽ được bỏ qua. Tối đa 2000 dòng mỗi lần.
+                <a href="mau-nhap-canh-bao.csv" download>Tải file mẫu (.csv)</a> — nhớ xóa các dòng “VÍ DỤ”.
+            </p>
+
+            <form method="post" @formname="upload" @onsubmit="UploadAsync" enctype="multipart/form-data" class="d-flex gap-2">
+                <AntiforgeryToken />
+                <input type="file" name="File" accept=".xlsx,.csv" class="form-control" required />
+                <button class="btn btn-primary text-nowrap">Kiểm tra file</button>
+            </form>
+        </div>
+    </div>
+}
+else
+{
+    <p>
+        File <b>@FileName</b>: @preview.Total dòng —
+        <span class="text-success">@preview.Valid hợp lệ</span>,
+        <span class="text-secondary">@preview.Duplicates trùng</span>,
+        <span class="text-danger">@preview.Errors lỗi</span>.
+        @if (preview.Created > 0) { <b class="text-success">Đã nhập @preview.Created cảnh báo.</b> }
+    </p>
+
+    <div class="d-flex gap-2 mb-3">
+        @if (preview.Created == 0 && preview.Valid > 0)
+        {
+            @* Nut thuoc form "confirm-form" o cuoi trang (thuoc tinh form= cua HTML). *@
+            <button form="confirm-form" class="btn btn-success">Nhập @preview.Valid cảnh báo hợp lệ</button>
+        }
+        @if (preview.Created > 0)
+        {
+            <a class="btn btn-outline-primary" href="alerts?source=admin">Xem danh sách cảnh báo nguồn admin</a>
+        }
+        <a class="btn btn-outline-secondary" href="alerts/import">@(preview.Created > 0 ? "Nhập file khác" : "Chọn file khác")</a>
+    </div>
+
+    <table class="table table-sm align-middle small">
+        <thead>
+            <tr><th>Dòng</th><th>Kết quả</th><th>Loại</th><th>Tên</th><th>Tọa độ</th><th>Giới hạn</th><th>Hướng</th><th>Ghi chú</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var r in preview.Rows)
+            {
+                <tr class="@RowClass(r.Status)">
+                    <td>@r.Row</td>
+                    <td>
+                        @switch (r.Status)
+                        {
+                            case "ok":
+                                @if (r.CreatedId is { } id) { <a href="alerts/@id" class="badge bg-success">Đã nhập #@id</a> }
+                                else { <span class="badge bg-success">Hợp lệ</span> }
+                                break;
+                            case "duplicate":
+                                <span class="badge bg-secondary">Trùng</span>
+                                break;
+                            default:
+                                <span class="badge bg-danger">Lỗi</span>
+                                break;
+                        }
+                    </td>
+                    <td>@(r.Type is null ? "—" : Labels.Type(r.Type))</td>
+                    <td>@r.Name</td>
+                    <td>
+                        @if (r.Lat is { } lat && r.Lng is { } lng)
+                        {
+                            <a href="@MapUrl(lat, lng)" target="_blank">@FormattableString.Invariant($"{lat:F5}, {lng:F5}")</a>
+                        }
+                    </td>
+                    <td>@r.SpeedLimit</td>
+                    <td>@r.Direction</td>
+                    <td>
+                        @r.Message
+                        @if (r.ExistingId is { } existing) { <a href="alerts/@existing"> (xem)</a> }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@*
+    Form xac nhan LUON co tren trang (an): khi POST, Blazor render lai trang tu dau roi tim form
+    theo ten - neu form chi hien sau buoc xem truoc thi luc do chua co -> loi "no form ... has that name".
+*@
+<form id="confirm-form" method="post" @formname="confirm" @onsubmit="ConfirmAsync">
+    <AntiforgeryToken />
+    <input type="hidden" name="Confirm.RowsJson" value="@rowsJson" />
+    <input type="hidden" name="Confirm.FileName" value="@FileName" />
+</form>
+
+@code {
+    // Static SSR: file gui len qua form multipart, Blazor dien vao IFormFile.
+    [SupplyParameterFromForm(FormName = "upload")] private IFormFile? File { get; set; }
+
+    // Buoc xac nhan: cac dong da doc (JSON) duoc gui lai qua o an -> khong can luu file tren server.
+    [SupplyParameterFromForm(FormName = "confirm")] private ConfirmForm? Confirm { get; set; }
+
+    private const long MaxFileBytes = 5 * 1024 * 1024;
+
+    private AlertImportResult? preview;
+    private string? rowsJson;
+    private string? FileName;
+
+    private Task UploadAsync() => RunAsync(async () =>
+    {
+        if (File is null || File.Length == 0) { Show("Chưa chọn file.", ""); return; }
+        if (File.Length > MaxFileBytes) { Show("File lớn quá 5 MB.", ""); return; }
+
+        List<Dictionary<string, string?>> rows;
+        try
+        {
+            await using var stream = new MemoryStream();
+            await File.CopyToAsync(stream);
+            stream.Position = 0;
+            rows = SpreadsheetReader.Read(stream, File.FileName);
+        }
+        catch (SpreadsheetException ex)
+        {
+            Show(ex.Message, "");
+            return;
+        }
+
+        FileName = File.FileName;
+        var res = await Api.ImportAlertsAsync(rows, dryRun: true);
+        if (!res.Ok) { Show(res.Error, ""); return; }
+
+        preview = res.Value;
+        rowsJson = JsonSerializer.Serialize(rows);
+        Message = null;
+    });
+
+    private Task ConfirmAsync() => RunAsync(async () =>
+    {
+        var json = Confirm?.RowsJson;
+        var rows = json is null ? null : JsonSerializer.Deserialize<List<Dictionary<string, string?>>>(json);
+        if (rows is null || rows.Count == 0) { Show("Không có dữ liệu để nhập, hãy tải file lại.", ""); return; }
+
+        FileName = Confirm?.FileName;
+        var res = await Api.ImportAlertsAsync(rows, dryRun: false);
+        if (!res.Ok) { Show(res.Error, ""); return; }
+
+        preview = res.Value;
+        Show(null, $"Đã nhập {preview!.Created} cảnh báo. Tài xế thấy ngay ở lần tải cảnh báo tiếp theo (tối đa 1 phút).");
+    });
+
+    private class ConfirmForm
+    {
+        public string? RowsJson { get; set; }
+        public string? FileName { get; set; }
+    }
+
+    private static string RowClass(string status) => status switch
+    {
+        "error" => "table-danger",
+        "duplicate" => "table-secondary",
+        _ => "",
+    };
+
+    private static string MapUrl(double lat, double lng) =>
+        FormattableString.Invariant($"https://www.openstreetmap.org/?mlat={lat}&mlon={lng}#map=18/{lat}/{lng}");
+}

@@ -86,6 +86,10 @@ public class ApiClient(HttpClient http)
     public Task<ApiResult<AdminAlert>> RejectAsync(int id) =>
         SendAsync<AdminAlert>(http.PostAsync($"api/v1/admin/alerts/{id}/reject", null));
 
+    /// <summary>Nhap hang loat. dryRun = true: chi kiem tra (xem truoc), khong ghi.</summary>
+    public Task<ApiResult<AlertImportResult>> ImportAlertsAsync(List<Dictionary<string, string?>> rows, bool dryRun) =>
+        SendAsync<AlertImportResult>(http.PostAsJsonAsync("api/v1/admin/alerts/import", new { rows, dryRun }));
+
     // ----- Nguoi dung -----
 
     public Task<PagedResult<AdminUser>> ListUsersAsync(string? q = null, int page = 1, int pageSize = 20) =>
