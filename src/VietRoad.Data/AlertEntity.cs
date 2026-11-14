@@ -80,6 +80,9 @@ public static class AlertTypes
     /// <summary>Khu vuc truong hoc (chu y tre em). Chi tu OSM / admin.</summary>
     public const string SchoolZone = "school_zone";
 
+    /// <summary>Khu vuc benh vien (chu y xe cap cuu). Chi tu OSM / admin.</summary>
+    public const string HospitalZone = "hospital_zone";
+
     /// <summary>Cac loai nguoi dung duoc phep bao cao.</summary>
     public static readonly IReadOnlySet<string> UserReportable =
         new HashSet<string> { SpeedCamera, RedLightCamera, AverageSpeedCamera, PoliceCheckpoint };
@@ -98,6 +101,7 @@ public static class AlertTypes
         RailwayCrossing => "Đường ngang đường sắt",
         SpeedBump => "Gờ giảm tốc",
         SchoolZone => "Khu vực trường học",
+        HospitalZone => "Khu vực bệnh viện",
         _ => "Camera tốc độ",
     };
 }

@@ -39,6 +39,7 @@ data class DriveState(
     val nav: NavState? = null,   // null = khong chi duong
     val speedLimit: Int? = null, // gioi han toc do hien tai (km/h), null = khong biet
     val overspeed: Boolean = false,
+    val reviewAlert: Alert? = null, // vua di qua diem nay -> hoi "con / khong con" (null = khong hoi)
 )
 
 /** Trang thai chi duong cho man hinh / thong bao. */
@@ -93,6 +94,8 @@ class DriveEngine(context: Context, private val api: ApiClient) {
 
     private var announcer: Announcer? = null
     private var policy = AnnouncementPolicy()
+    private val reviewTracker = PassReviewTracker()
+    private var reviewShownAt = 0L
     private var trackingJob: Job? = null
 
     // Bo nho dem canh bao quanh xe, tai lai khi xe di xa hoac sau 1 phut.
@@ -126,6 +129,7 @@ class DriveEngine(context: Context, private val api: ApiClient) {
         if (trackingJob != null) return
         announcer = Announcer(appContext)
         policy = AnnouncementPolicy()
+        reviewTracker.reset()
         _state.update { it.copy(tracking = true) }
         trackingJob = scope.launch { tracker.updates().collect { onLocation(it) } }
     }
@@ -141,6 +145,7 @@ class DriveEngine(context: Context, private val api: ApiClient) {
         roads = emptyList()
         speedMatcher.reset()
         overspeedPolicy = OverspeedPolicy()
+        reviewTracker.reset()
         lastFetchAt = 0
         lastFetchLat = null
         lastFetchLng = null
@@ -253,6 +258,9 @@ class DriveEngine(context: Context, private val api: ApiClient) {
     }
 
     /** Tai lai ngay (sau khi bao cao / xac nhan) de thay ket qua. */
+    /** Bo loi hoi "con / khong con" (tai xe da tra loi hoac bo qua). */
+    fun clearReview() = _state.update { it.copy(reviewAlert = null) }
+
     fun refreshNow() {
         _state.value.position?.let { refreshNearbyIfNeeded(it, force = true) }
     }
@@ -283,9 +291,16 @@ class DriveEngine(context: Context, private val api: ApiClient) {
         val limit = currentSpeedLimit(position, ahead)
         overspeedPolicy.next(position.speedKmh, limit, SystemClock.elapsedRealtime())?.let { announcer?.speak(it) }
 
+        val review = reviewTracker.passed(nearby, position.lat, position.lng)
+        if (review != null) reviewShownAt = SystemClock.elapsedRealtime()
+
         _state.update {
+            // Giu loi hoi dang hien; neu vua co diem moi di qua thi thay; tu an sau REVIEW_TIMEOUT_MS.
+            val current = if (review != null) review
+                else it.reviewAlert?.takeIf { _ -> SystemClock.elapsedRealtime() - reviewShownAt < REVIEW_TIMEOUT_MS }
             it.copy(position = position, ahead = ahead, nearbyCount = nearby.size, nearby = nearby,
-                speedLimit = limit, overspeed = overspeedPolicy.isOver(position.speedKmh, limit))
+                speedLimit = limit, overspeed = overspeedPolicy.isOver(position.speedKmh, limit),
+                reviewAlert = current)
         }
     }
 
@@ -346,5 +361,6 @@ class DriveEngine(context: Context, private val api: ApiClient) {
         const val REROUTE_INTERVAL_MS = 15_000L
         const val ROAD_FETCH_RADIUS_M = 2000
         const val CAMERA_LIMIT_RANGE_M = 150
+        const val REVIEW_TIMEOUT_MS = 25_000L // loi hoi "con/khong con" tu an neu khong tra loi
     }
 }

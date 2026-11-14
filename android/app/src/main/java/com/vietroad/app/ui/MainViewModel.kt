@@ -39,6 +39,7 @@ data class UiState(
     val overspeed: Boolean = false,
     val online: Boolean = true,
     val nav: NavState? = null,
+    val reviewAlert: Alert? = null, // vua di qua -> hoi "con / khong con"
     // Man hinh tim diem den (null = dang o man hinh lai xe).
     val search: SearchUi? = null,
     // Goi dich vu (null = chua tai xong). Quyet dinh tinh nang nao duoc dung.
@@ -80,7 +81,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 _state.update {
                     it.copy(tracking = d.tracking, position = d.position, ahead = d.ahead,
                         nearbyCount = d.nearbyCount, nearby = d.nearby, online = d.online, nav = d.nav,
-                        speedLimit = d.speedLimit, overspeed = d.overspeed)
+                        speedLimit = d.speedLimit, overspeed = d.overspeed, reviewAlert = d.reviewAlert)
                 }
             }
         }
@@ -246,12 +247,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 api.vote(alertId, confirm)
                 showMessage(if (confirm) "Đã xác nhận còn." else "Đã báo không còn.")
+                engine.clearReview()
                 engine.refreshNow()
             } catch (e: Exception) {
                 handleError(e)
             }
         }
     }
+
+    /** Tai xe bam "Bo qua" tren loi hoi "con / khong con". */
+    fun dismissReview() = engine.clearReview()
 
     fun clearMessage() = _state.update { it.copy(message = null) }
 

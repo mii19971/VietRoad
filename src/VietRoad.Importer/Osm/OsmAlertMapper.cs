@@ -128,34 +128,45 @@ public static partial class OsmAlertMapper
         var crossingPoints = Deduplicate(crossings, CrossingMergeRadiusM, checkDirection: false);
         var bumpPoints = Deduplicate(bumps, BumpMergeRadiusM, checkDirection: false);
 
-        // 6. Truong hoc (node / way / relation, lay 1 diem). Khong co huong (bao moi phia). Nhieu truong
-        //    sat nhau (vd mam non + tieu hoc + THCS 1 cum) gop thanh 1 "khu vuc" de khong doc lien tuc.
-        var schools = new List<ImportedAlert>();
-        foreach (var e in response.Elements.Where(e => Tag(e, "amenity") == "school"))
-        {
-            var lat = e.Lat ?? e.Center?.Lat;
-            var lng = e.Lon ?? e.Center?.Lon;
-            if (lat is null || lng is null) continue;
-            schools.Add(new ImportedAlert($"osm:{e.Type}/{e.Id}", AlertTypes.SchoolZone,
-                NameOf(e.Tags, AlertTypes.SchoolZone), lat.Value, lng.Value, SpeedLimit: null, Direction: null));
-        }
-        var schoolZones = Deduplicate(schools, SchoolMergeRadiusM, checkDirection: false);
+        // 6. Khu vuc (truong hoc, benh vien): node / way / relation -> 1 diem. Khong co huong (bao moi phia).
+        //    Nhieu diem sat nhau gop thanh 1 "khu vuc" de khong doc lien tuc.
+        var schools = AmenityZones(response, "school", AlertTypes.SchoolZone);
+        var hospitals = AmenityZones(response, "hospital", AlertTypes.HospitalZone);
+        var schoolZones = Deduplicate(schools, ZoneMergeRadiusM, checkDirection: false);
+        var hospitalZones = Deduplicate(hospitals, ZoneMergeRadiusM, checkDirection: false);
 
         var merged = byNodeId.Count + fromRelations.Count - cameras.Count + tolls.Count - tollStations.Count
                    + crossings.Count - crossingPoints.Count + bumps.Count - bumpPoints.Count
-                   + schools.Count - schoolZones.Count;
+                   + schools.Count - schoolZones.Count + hospitals.Count - hospitalZones.Count;
 
-        return new MapResult([.. cameras, .. tollStations, .. crossingPoints, .. bumpPoints, .. schoolZones], skipped, merged);
+        return new MapResult(
+            [.. cameras, .. tollStations, .. crossingPoints, .. bumpPoints, .. schoolZones, .. hospitalZones],
+            skipped, merged);
     }
 
     public const double CameraMergeRadiusM = 30;
     public const double TollMergeRadiusM = 150;
     public const double CrossingMergeRadiusM = 50;
     public const double BumpMergeRadiusM = 100;
-    public const double SchoolMergeRadiusM = 120;
+    public const double ZoneMergeRadiusM = 120;
 
     public const string RumbleStripName = "Vạch giảm tốc";
     public const string UnguardedCrossingName = "Đường ngang không có rào chắn";
+
+    /// <summary>Cac tien ich dang vung (amenity) -> 1 diem canh bao (node lay toa do, way/relation lay diem giua).</summary>
+    private static List<ImportedAlert> AmenityZones(OsmResponse response, string amenity, string type)
+    {
+        var zones = new List<ImportedAlert>();
+        foreach (var e in response.Elements.Where(e => Tag(e, "amenity") == amenity))
+        {
+            var lat = e.Lat ?? e.Center?.Lat;
+            var lng = e.Lon ?? e.Center?.Lon;
+            if (lat is null || lng is null) continue;
+            zones.Add(new ImportedAlert($"osm:{e.Type}/{e.Id}", type,
+                NameOf(e.Tags, type), lat.Value, lng.Value, SpeedLimit: null, Direction: null));
+        }
+        return zones;
+    }
 
     // Diem nguy hiem: khong dung the "name" cua OSM (thuong la ten tuyen / ly trinh, doc len kho hieu).
     private static ImportedAlert Hazard(OsmElement n, string type, string name, double? axis) =>

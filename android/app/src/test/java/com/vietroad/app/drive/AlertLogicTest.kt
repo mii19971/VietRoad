@@ -155,4 +155,13 @@ class AlertLogicTest {
         assertNull(policy.next(AheadAlert(school, 400)))                 // xa: khong doc
         assertEquals("Sắp tới Khu vực trường học", policy.next(AheadAlert(school, 140)))  // doc chung, khong doc ten truong
     }
+
+    @Test
+    fun hospitalZone_announcedOnlyWhenNear_generic() {
+        val hospital = Alert(id = 3, type = "hospital_zone", lat = carLat, lng = carLng,
+            name = "Bệnh viện Bạch Mai", source = "osm")
+        val policy = AnnouncementPolicy()
+        assertNull(policy.next(AheadAlert(hospital, 400)))
+        assertEquals("Sắp tới Khu vực bệnh viện", policy.next(AheadAlert(hospital, 140)))
+    }
 }

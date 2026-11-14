@@ -81,7 +81,8 @@ var cameraData = await overpassClient.FetchVietnamCamerasAsync(overpassEndpoint)
 // camera ma ghi vao, buoc "an diem khong con tren OSM" se an nham het duong ngang / go giam toc.
 var hazardData = await overpassClient.FetchVietnamHazardsAsync(overpassEndpoint);
 var schoolData = await overpassClient.FetchVietnamSchoolsAsync(overpassEndpoint);
-var osm = new OsmResponse([.. cameraData.Elements, .. hazardData.Elements, .. schoolData.Elements]);
+var hospitalData = await overpassClient.FetchVietnamHospitalsAsync(overpassEndpoint);
+var osm = new OsmResponse([.. cameraData.Elements, .. hazardData.Elements, .. schoolData.Elements, .. hospitalData.Elements]);
 
 // ===== 3. Chuyen sang dang cua VietRoad =====
 var result = OsmAlertMapper.Map(osm);

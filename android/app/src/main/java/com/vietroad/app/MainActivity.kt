@@ -63,6 +63,7 @@ class MainActivity : ComponentActivity() {
                             onStopNavigation = viewModel::stopNavigation,
                             onReport = viewModel::report,
                             onVote = viewModel::vote,
+                            onDismissReview = viewModel::dismissReview,
                             onLogout = viewModel::logout,
                         )
                     }

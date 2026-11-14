@@ -142,6 +142,7 @@ object AlertTypes {
     const val RAILWAY_CROSSING = "railway_crossing" // duong ngang duong sat, tu OSM
     const val SPEED_BUMP = "speed_bump"           // go / vach giam toc, tu OSM
     const val SCHOOL_ZONE = "school_zone"         // khu vuc truong hoc, tu OSM
+    const val HOSPITAL_ZONE = "hospital_zone"     // khu vuc benh vien, tu OSM
 
     fun label(type: String): String = when (type) {
         SPEED_CAMERA -> "Camera tốc độ"
@@ -153,6 +154,7 @@ object AlertTypes {
         RAILWAY_CROSSING -> "Đường ngang đường sắt"
         SPEED_BUMP -> "Gờ giảm tốc"
         SCHOOL_ZONE -> "Khu vực trường học"
+        HOSPITAL_ZONE -> "Khu vực bệnh viện"
         else -> type
     }
 
@@ -171,5 +173,12 @@ object AlertTypes {
     fun hasRoadAxis(type: String): Boolean = type == RAILWAY_CROSSING || type == SPEED_BUMP
 
     /** Loai "nho": chi doc 1 lan khi da gan (doc tu xa moi go giam toc / truong hoc thi qua on). */
-    fun announceOnlyWhenNear(type: String): Boolean = type == SPEED_BUMP || type == SCHOOL_ZONE
+    fun announceOnlyWhenNear(type: String): Boolean = type == SPEED_BUMP || type == SCHOOL_ZONE || type == HOSPITAL_ZONE
+
+    /**
+     * Loai co the thay doi (camera bi go, chot CSGT giai tan) -> hoi "con/khong con" sau khi di qua.
+     * Ha tang co dinh (tram thu phi, duong ngang, go, truong, benh vien) khong hoi.
+     */
+    fun canReview(type: String): Boolean =
+        type == SPEED_CAMERA || type == RED_LIGHT_CAMERA || type == AVERAGE_SPEED_CAMERA || type == POLICE_CHECKPOINT
 }

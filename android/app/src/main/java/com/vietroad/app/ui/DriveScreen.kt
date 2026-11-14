@@ -51,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.vietroad.app.data.Alert
 import com.vietroad.app.data.AlertTypes
 import com.vietroad.app.data.SubscriptionInfo
 import androidx.compose.ui.graphics.Color
@@ -71,6 +72,7 @@ fun DriveScreen(
     onStopNavigation: () -> Unit,
     onReport: (type: String) -> Unit,
     onVote: (alertId: Int, confirm: Boolean) -> Unit,
+    onDismissReview: () -> Unit,
     onLogout: () -> Unit,
 ) {
     // ----- Xin quyen vi tri (Android 6+ phai hoi luc chay) -----
@@ -98,6 +100,7 @@ fun DriveScreen(
                     TrackingToggle(state, hasPermission, onStartTracking, onStopTracking)
                     PermissionWarning(hasPermission) { hasPermission = hasLocationPermission(context) }
                     NavigationBlock(state, hasPermission, onOpenSearch, onStopNavigation)
+                    ReviewPrompt(state.reviewAlert, onVote, onDismissReview)
                     SpeedBlock(state, speedSize = 64)
                     NearestBlock(state, onVote)
                     UpcomingList(state.ahead.drop(1))
@@ -117,6 +120,7 @@ fun DriveScreen(
                 TrackingToggle(state, hasPermission, onStartTracking, onStopTracking)
                 PermissionWarning(hasPermission) { hasPermission = hasLocationPermission(context) }
                 NavigationBlock(state, hasPermission, onOpenSearch, onStopNavigation)
+                ReviewPrompt(state.reviewAlert, onVote, onDismissReview)
                 Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(16.dp))) {
                     DriveMap(state, Modifier.fillMaxSize())
                     SpeedBadge(state, Modifier.align(Alignment.BottomStart).padding(12.dp))
@@ -304,6 +308,29 @@ private fun ColumnScope.UpcomingList(items: List<AheadAlert>) {
 @Composable
 private fun MessageText(message: String?) {
     message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+}
+
+/**
+ * Hoi nhanh "con / khong con" sau khi vua di qua 1 diem (camera, chot CSGT). Giup du lieu luon moi:
+ * diem da go bi bao "khong con" roi tu mo di; diem con that duoc xac nhan nen khong bi giam diem.
+ */
+@Composable
+private fun ReviewPrompt(alert: Alert?, onVote: (Int, Boolean) -> Unit, onDismiss: () -> Unit) {
+    if (alert == null) return
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Bạn vừa qua ${AlertTypes.label(alert.type)}. Còn không?",
+                style = MaterialTheme.typography.titleMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { onVote(alert.id, true) }, modifier = Modifier.weight(1f)) { Text("Còn") }
+                Button(onClick = { onVote(alert.id, false) }, modifier = Modifier.weight(1f)) { Text("Không còn") }
+                TextButton(onClick = onDismiss) { Text("Bỏ qua") }
+            }
+        }
+    }
 }
 
 @Composable

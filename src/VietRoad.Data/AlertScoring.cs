@@ -14,6 +14,12 @@ public static class AlertScoring
     public const int MinVisible = 20;
     private const int PointsPerVote = 10;
 
+    /// <summary>So ngay dau sau lan xac nhan gan nhat KHONG bi giam (bao con moi -> van tin).</summary>
+    public const int DecayGraceDays = 3;
+
+    /// <summary>Qua thoi gian an han, moi ngay khong ai xac nhan thi tru bay nhieu diem tin cay.</summary>
+    public const double DecayPerDay = 2;
+
     public static int BaseConfidence(string source) => source switch
     {
         AlertSources.Admin => 90,    // doi van hanh da kiem tra
@@ -31,4 +37,29 @@ public static class AlertScoring
 
     public static int Compute(AlertEntity a) =>
         Compute(a.Source, a.VerifiedAt is not null, a.ConfirmCount, a.DenyCount);
+
+    /// <summary>
+    /// CHI canh bao cua nguoi dung (chua admin duyet) moi ha dan theo thoi gian.
+    /// OSM / doi tac / admin la du lieu co nguoi quan ly, khong tu ha.
+    /// => camera nguoi dung bao ma da go, lau khong ai xac nhan -> tu tut diem roi an di.
+    /// </summary>
+    public static bool Decays(string source, bool verified) =>
+        source == AlertSources.User && !verified;
+
+    /// <summary>So diem bi tru do lau khong ai xac nhan (0 neu loai khong ha dan hoac con trong han han).</summary>
+    public static int DecayPoints(string source, bool verified, DateTimeOffset lastConfirmedAt, DateTimeOffset now)
+    {
+        if (!Decays(source, verified)) return 0;
+        var days = (now - lastConfirmedAt).TotalDays - DecayGraceDays;
+        return days <= 0 ? 0 : (int)Math.Round(days * DecayPerDay);
+    }
+
+    /// <summary>Do tin cay HIEU LUC luc now = diem theo phieu tru phan ha theo thoi gian.</summary>
+    public static int Effective(AlertEntity a, DateTimeOffset now) =>
+        Math.Clamp(
+            Compute(a) - DecayPoints(a.Source, a.VerifiedAt is not null, a.LastConfirmedAt ?? a.CreatedAt, now),
+            0, 100);
+
+    /// <summary>Con du tin cay de hien cho tai xe khong (tinh ca giam theo thoi gian).</summary>
+    public static bool IsVisible(AlertEntity a, DateTimeOffset now) => Effective(a, now) >= MinVisible;
 }

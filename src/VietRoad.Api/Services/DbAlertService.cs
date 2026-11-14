@@ -16,19 +16,22 @@ public class DbAlertService(VietRoadDbContext db, TimeProvider time) : IAlertSer
     public async Task<IReadOnlyList<NearbyAlert>> FindNearbyAsync(
         double lat, double lng, double radiusM, CancellationToken ct = default)
     {
+        var now = time.GetUtcNow();
         var box = GeoUtils.BoundingBox(lat, lng, radiusM);
 
         var candidates = await db.Alerts
             .AsNoTracking() // chi doc, khong can EF theo doi thay doi -> nhanh hon
             .Where(a => a.Lat >= box.MinLat && a.Lat <= box.MaxLat
                      && a.Lng >= box.MinLng && a.Lng <= box.MaxLng)
-            .Where(VisibleAt(time.GetUtcNow()))
+            .Where(VisibleAt(now))
             .ToListAsync(ct);
 
-        // Buoc 2 - tinh khoang cach that, loc dung ban kinh, sap xep gan -> xa.
+        // Buoc 2 - loc giam-theo-thoi-gian (tinh trong C#), khoang cach that, sap xep gan -> xa.
+        // Tra ve do tin cay HIEU LUC (da tru phan ha) de app hien dung muc tin hien tai.
         return candidates
+            .Where(a => AlertScoring.IsVisible(a, now))
             .Select(a => new NearbyAlert(
-                Alert.From(a),
+                Alert.From(a) with { Confidence = AlertScoring.Effective(a, now) },
                 (int)Math.Round(GeoUtils.DistanceMeters(lat, lng, a.Lat, a.Lng))))
             .Where(x => x.DistanceM <= radiusM)
             .OrderBy(x => x.DistanceM)
@@ -36,7 +39,9 @@ public class DbAlertService(VietRoadDbContext db, TimeProvider time) : IAlertSer
     }
 
     /// <summary>
-    /// Dieu kien de 1 canh bao duoc hien cho tai xe. Dung chung cho tim kiem va bao cao trung.
+    /// Loc so bo chay trong SQL (nhanh): con hieu luc, chua het han, diem theo phieu con du.
+    /// Giam-theo-thoi-gian chi ha them diem nen khong the lam 1 canh bao da duoi nguong hien tro lai
+    /// -> loc SQL nay van dung; phan ha theo thoi gian loc tiep trong C# (<see cref="AlertScoring.IsVisible"/>).
     /// Tra ve Expression (khong phai Func) de EF Core dich duoc sang SQL:
     ///   is_active AND (expires_at IS NULL OR expires_at > @now) AND confidence >= 20
     /// </summary>

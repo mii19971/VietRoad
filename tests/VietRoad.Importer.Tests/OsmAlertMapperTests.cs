@@ -291,4 +291,23 @@ public class OsmAlertMapperTests
         Assert.Contains(zones, z => z.Name == "Trường THCS A");    // cum gan giu ten truong co ten
         Assert.Contains(zones, z => z.Name == "Khu vực trường học"); // relation khong ten -> mac dinh
     }
+
+    [Fact]
+    public void Hospitals_Mapped_NoDirection_NearbyMerged()
+    {
+        var osm = new OsmResponse([
+            Node(1, 21.00000, 105.80000, new() { ["amenity"] = "hospital", ["name"] = "Bệnh viện A" }),
+            new OsmElement("way", 2, null, null, new() { ["amenity"] = "hospital" }, null,
+                Center: new OsmCenter(21.00080, 105.80000)),   // ~89 m -> cung khu vuc
+            new OsmElement("relation", 3, null, null, new() { ["amenity"] = "hospital", ["name"] = "Bệnh viện B" }, null,
+                Center: new OsmCenter(21.20000, 105.80000)),   // xa -> rieng
+            Node(4, 21.00000, 105.90000, new() { ["amenity"] = "clinic" }),   // phong kham: bo qua
+        ]);
+
+        var zones = OsmAlertMapper.Map(osm).Alerts.Where(a => a.Type == AlertTypes.HospitalZone).ToList();
+        Assert.Equal(2, zones.Count);
+        Assert.All(zones, z => Assert.Null(z.Direction));
+        Assert.Contains(zones, z => z.Name == "Bệnh viện A");
+        Assert.Contains(zones, z => z.Name == "Bệnh viện B");
+    }
 }

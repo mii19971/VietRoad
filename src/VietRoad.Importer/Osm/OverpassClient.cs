@@ -83,6 +83,19 @@ public class OverpassClient(HttpClient http)
     public Task<OsmResponse> FetchVietnamSchoolsAsync(string endpoint, CancellationToken ct = default) =>
         QueryAsync(endpoint, VietnamSchoolsQuery, ct);
 
+    // Benh vien: node / way / relation -> 1 diem giua. Chi lay amenity=hospital (co cap cuu),
+    // KHONG lay "clinic" / "doctors" (phong kham nho, khong co xe cap cuu ra vao nhieu).
+    private const string VietnamHospitalsQuery = """
+        [out:json][timeout:180];
+        area["ISO3166-1"="VN"][admin_level=2]->.vn;
+        nwr["amenity"="hospital"](area.vn);
+        out center;
+        """;
+
+    /// <summary>Benh vien tren ca nuoc (de bao "khu vuc benh vien, chu y xe cap cuu").</summary>
+    public Task<OsmResponse> FetchVietnamHospitalsAsync(string endpoint, CancellationToken ct = default) =>
+        QueryAsync(endpoint, VietnamHospitalsQuery, ct);
+
     /// <summary>
     /// Cac loai duong lay gioi han toc do. Tai TUNG LOAI 1 lan: hoi tat ca cung luc qua nang,
     /// may chu Overpass cong cong tra 504.
