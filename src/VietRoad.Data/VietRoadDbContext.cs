@@ -17,6 +17,7 @@ public class VietRoadDbContext(DbContextOptions<VietRoadDbContext> options) : Db
     public DbSet<RefreshTokenEntity> RefreshTokens => Set<RefreshTokenEntity>();
     public DbSet<AlertVoteEntity> AlertVotes => Set<AlertVoteEntity>();
     public DbSet<SubscriptionEntity> Subscriptions => Set<SubscriptionEntity>();
+    public DbSet<RoadSpeedLimitEntity> RoadSpeedLimits => Set<RoadSpeedLimitEntity>();
 
     // Mo ta cau truc bang. Migration duoc sinh ra tu day.
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -154,6 +155,26 @@ public class VietRoadDbContext(DbContextOptions<VietRoadDbContext> options) : Db
                 .WithMany()
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RoadSpeedLimitEntity>(e =>
+        {
+            e.ToTable("road_speed_limits");
+            e.Property(r => r.Id).HasColumnName("id").ValueGeneratedNever(); // = id way OSM
+            e.Property(r => r.Highway).HasColumnName("highway").HasMaxLength(32);
+            e.Property(r => r.Name).HasColumnName("name").HasMaxLength(200);
+            e.Property(r => r.Ref).HasColumnName("ref").HasMaxLength(64);
+            e.Property(r => r.MaxSpeed).HasColumnName("max_speed");
+            e.Property(r => r.Oneway).HasColumnName("oneway");
+            e.Property(r => r.Points).HasColumnName("points");
+            e.Property(r => r.MinLat).HasColumnName("min_lat");
+            e.Property(r => r.MaxLat).HasColumnName("max_lat");
+            e.Property(r => r.MinLng).HasColumnName("min_lng");
+            e.Property(r => r.MaxLng).HasColumnName("max_lng");
+            e.Property(r => r.UpdatedAt).HasColumnName("updated_at");
+
+            // Tim doan duong co khung bao cat vung quanh xe.
+            e.HasIndex(r => new { r.MinLat, r.MaxLat });
         });
     }
 }

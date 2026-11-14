@@ -65,7 +65,7 @@ public static class Labels
     public static readonly string[] AlertTypes = ["speed_camera", "red_light_camera", "average_speed_camera", "police_checkpoint"];
 
     /// <summary>Moi loai (de loc danh sach): them cac loai chi den tu OSM.</summary>
-    public static readonly string[] AllAlertTypes = [.. AlertTypes, "traffic_camera", "toll_booth"];
+    public static readonly string[] AllAlertTypes = [.. AlertTypes, "traffic_camera", "toll_booth", "railway_crossing", "speed_bump"];
 
     public static string Type(string type) => type switch
     {
@@ -75,6 +75,8 @@ public static class Labels
         "police_checkpoint" => "Chốt CSGT",
         "traffic_camera" => "Camera giám sát",
         "toll_booth" => "Trạm thu phí",
+        "railway_crossing" => "Đường ngang đường sắt",
+        "speed_bump" => "Gờ giảm tốc",
         _ => type,
     };
 

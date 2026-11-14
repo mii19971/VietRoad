@@ -11,8 +11,17 @@ New-Item -ItemType Directory -Force $logDir | Out-Null
 $log = Join-Path $logDir ("import-osm-{0:yyyyMMdd-HHmm}.log" -f (Get-Date))
 
 # Chay importer, ghi log (ca loi) vao file de xem lai khi chay ngam.
-dotnet run -c Release --project (Join-Path $root "src\VietRoad.Importer") *>&1 | Tee-Object -FilePath $log
-exit $LASTEXITCODE
+$project = Join-Path $root "src\VietRoad.Importer"
+
+# 1. Canh bao: camera, tram thu phi
+dotnet run -c Release --project $project *>&1 | Tee-Object -FilePath $log
+$alertsExit = $LASTEXITCODE
+
+# 2. Gioi han toc do tung doan duong (~29.000 doan, mat vai phut)
+dotnet run -c Release --project $project -- speed-limits *>&1 | Tee-Object -FilePath $log -Append
+$speedExit = $LASTEXITCODE
+
+exit [Math]::Max($alertsExit, $speedExit)
 
 # ---------------------------------------------------------------------------
 # Dang ky chay 3 gio sang Chu nhat hang tuan (mo PowerShell, KHONG can quyen admin):

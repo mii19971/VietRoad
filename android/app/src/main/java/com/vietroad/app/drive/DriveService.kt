@@ -132,6 +132,9 @@ class DriveService : Service() {
         /** Ham thuan -> unit test duoc. Vd: "Camera tốc độ (60 km/h) · còn 450 m". */
         fun notificationText(state: DriveState): String {
             if (!state.tracking || state.position == null) return "Đang chờ tín hiệu vị trí…"
+            if (state.overspeed && state.speedLimit != null) {
+                return "⚠ Quá tốc độ: ${state.position.speedKmh} / ${state.speedLimit} km/h"
+            }
             state.nav?.let { nav ->
                 // Dang chi duong: hien chi dan sap toi. Vd "Rẽ trái vào Phố Huế · 300 m"
                 if (nav.rerouting) return "Đang tính lại đường đi…"
@@ -141,7 +144,7 @@ class DriveService : Service() {
             val next = state.ahead.firstOrNull() ?: return "Không có cảnh báo phía trước"
             val limit = next.alert.speedLimit?.let { " ($it km/h)" } ?: ""
             val rounded = (next.distanceM + 25) / 50 * 50
-            return "${AlertTypes.label(next.alert.type)}$limit · còn $rounded m"
+            return "${AlertTypes.title(next.alert)}$limit · còn $rounded m"
         }
     }
 }

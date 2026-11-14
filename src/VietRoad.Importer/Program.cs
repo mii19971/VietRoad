@@ -8,9 +8,11 @@ using VietRoad.Importer.Osm;
 //   dotnet run --project src/VietRoad.Importer                        -> nhap camera tu OSM vao database
 //   dotnet run --project src/VietRoad.Importer -- --dry-run           -> chi in ra, khong ghi database
 //   dotnet run --project src/VietRoad.Importer -- make-admin a@b.com  -> cap quyen admin cho tai khoan
+//   dotnet run --project src/VietRoad.Importer -- speed-limits        -> nhap gioi han toc do duong tu OSM
 
 var dryRun = args.Contains("--dry-run");
 var isMakeAdmin = args.Length >= 2 && args[0] == "make-admin";
+var isSpeedLimits = args.Length >= 1 && args[0] == "speed-limits";
 
 // ===== 1. Doc cau hinh =====
 // Thu tu uu tien (sau de len truoc): User Secrets < bien moi truong < tham so dong lenh.
@@ -42,12 +44,43 @@ if (isMakeAdmin)
 var overpassEndpoint = config["Overpass:Endpoint"] ?? OverpassClient.DefaultEndpoint;
 
 // ===== 2. Tai du lieu tu OpenStreetMap =====
-using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(3) };
+using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(6) };
 // Overpass yeu cau User-Agent de biet ai dang goi.
 http.DefaultRequestHeaders.UserAgent.ParseAdd("VietRoad-Importer/0.1");
 
+if (isSpeedLimits)
+{
+    // Tai tung loai duong; 1 loai loi -> dung han, KHONG ghi (tranh xoa nham du lieu loai do).
+    var overpass = new OverpassClient(http);
+    var roads = new List<ImportedRoadSpeed>();
+    foreach (var group in OverpassClient.SpeedLimitHighwayGroups)
+    {
+        Console.Write($"Dang tai {group,-40} ");
+        var response = await overpass.FetchSpeedLimitWaysAsync(overpassEndpoint, group);
+        var (mapped, skippedWays) = SpeedLimitMapper.Map(response);
+        roads.AddRange(mapped);
+        Console.WriteLine($"{mapped.Count,6} doan, bo qua {skippedWays} (maxspeed khong phai so)");
+    }
+
+    Console.WriteLine($"Tong {roads.Count} doan duong, {roads.Sum(r => r.Points.Count)} diem.");
+    foreach (var g in roads.GroupBy(r => r.MaxSpeed).OrderByDescending(g => g.Count()).Take(8))
+        Console.WriteLine($"  {g.Key,3} km/h: {g.Count()} doan");
+    if (dryRun) { Console.WriteLine("--dry-run: khong ghi database."); return 0; }
+
+    await using var speedDb = await OpenDatabaseAsync();
+    if (speedDb is null) return 1;
+    var s = await new SpeedLimitImporter(speedDb).ImportAsync(roads);
+    Console.WriteLine($"Xong: them {s.Added}, cap nhat {s.Updated}, giu nguyen {s.Unchanged}, xoa {s.Deactivated}.");
+    return 0;
+}
+
 Console.WriteLine($"Dang tai du lieu tu {overpassEndpoint} ...");
-var osm = await new OverpassClient(http).FetchVietnamCamerasAsync(overpassEndpoint);
+var overpassClient = new OverpassClient(http);
+var cameraData = await overpassClient.FetchVietnamCamerasAsync(overpassEndpoint);
+// Truy van rieng (gop chung 1 lan qua nang, de bi 504). Loi -> dung han, KHONG ghi: neu chi co
+// camera ma ghi vao, buoc "an diem khong con tren OSM" se an nham het duong ngang / go giam toc.
+var hazardData = await overpassClient.FetchVietnamHazardsAsync(overpassEndpoint);
+var osm = new OsmResponse([.. cameraData.Elements, .. hazardData.Elements]);
 
 // ===== 3. Chuyen sang dang cua VietRoad =====
 var result = OsmAlertMapper.Map(osm);

@@ -209,6 +209,68 @@ namespace VietRoad.Data.Migrations
                     b.ToTable("refresh_tokens", "vietroad");
                 });
 
+            modelBuilder.Entity("VietRoad.Data.RoadSpeedLimitEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Highway")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("highway");
+
+                    b.Property<double>("MaxLat")
+                        .HasColumnType("double precision")
+                        .HasColumnName("max_lat");
+
+                    b.Property<double>("MaxLng")
+                        .HasColumnType("double precision")
+                        .HasColumnName("max_lng");
+
+                    b.Property<int>("MaxSpeed")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_speed");
+
+                    b.Property<double>("MinLat")
+                        .HasColumnType("double precision")
+                        .HasColumnName("min_lat");
+
+                    b.Property<double>("MinLng")
+                        .HasColumnType("double precision")
+                        .HasColumnName("min_lng");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<bool>("Oneway")
+                        .HasColumnType("boolean")
+                        .HasColumnName("oneway");
+
+                    b.Property<string>("Points")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("points");
+
+                    b.Property<string>("Ref")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("ref");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MinLat", "MaxLat");
+
+                    b.ToTable("road_speed_limits", "vietroad");
+                });
+
             modelBuilder.Entity("VietRoad.Data.SubscriptionEntity", b =>
                 {
                     b.Property<int>("Id")

@@ -10,6 +10,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.unit.Dp
 import androidx.compose.material3.Surface
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Column
@@ -209,10 +215,14 @@ private fun PermissionWarning(hasPermission: Boolean, onRetry: () -> Unit) {
 private fun SpeedBlock(state: UiState, speedSize: Int) {
     val position = state.position
     Column {
-        Text(
-            text = position?.speedKmh?.let { "$it km/h" } ?: "-- km/h",
-            fontSize = speedSize.sp, fontWeight = FontWeight.Bold,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text(
+                text = position?.speedKmh?.let { "$it km/h" } ?: "-- km/h",
+                fontSize = speedSize.sp, fontWeight = FontWeight.Bold,
+                color = speedColor(state),
+            )
+            state.speedLimit?.let { SpeedLimitSign(it, size = (speedSize * 1.1f).dp) }
+        }
         Text(
             text = when {
                 position == null -> "Đang chờ vị trí…"
@@ -233,13 +243,41 @@ private fun SpeedBadge(state: UiState, modifier: Modifier) {
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
         shadowElevation = 4.dp,
     ) {
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
-            Text(state.position?.speedKmh?.let { "$it km/h" } ?: "-- km/h", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-            Text(
-                state.position?.let(::locationSource) ?: "Đang chờ vị trí…",
-                style = MaterialTheme.typography.labelSmall,
-            )
+        Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column {
+                Text(state.position?.speedKmh?.let { "$it km/h" } ?: "-- km/h", fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold, color = speedColor(state))
+                Text(
+                    state.position?.let(::locationSource) ?: "Đang chờ vị trí…",
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
+            state.speedLimit?.let { Spacer(Modifier.width(10.dp)); SpeedLimitSign(it, size = 48.dp) }
         }
+    }
+}
+
+/** Toc do mau do khi qua gioi han. */
+@Composable
+private fun speedColor(state: UiState) =
+    if (state.overspeed) Color(0xFFE53935) else MaterialTheme.colorScheme.onSurface
+
+/** Bien bao gioi han toc do (tron, nen trang, vien do, so den) - giong bien P.127 ngoai duong. */
+@Composable
+private fun SpeedLimitSign(limit: Int, size: Dp) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .background(Color.White, CircleShape)
+            .border(width = size * 0.11f, color = Color(0xFFD32F2F), shape = CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            "$limit",
+            color = Color.Black,
+            fontWeight = FontWeight.Bold,
+            fontSize = (size.value * if (limit >= 100) 0.34f else 0.42f).sp,
+        )
     }
 }
 
@@ -257,7 +295,7 @@ private fun NearestBlock(state: UiState, onVote: (Int, Boolean) -> Unit) {
 private fun ColumnScope.UpcomingList(items: List<AheadAlert>) {
     LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
         items(items, key = { it.alert.id }) { item ->
-            Text("${AlertTypes.label(item.alert.type)} · ${formatDistance(item.distanceM)}", Modifier.padding(vertical = 6.dp))
+            Text("${AlertTypes.title(item.alert)} · ${formatDistance(item.distanceM)}", Modifier.padding(vertical = 6.dp))
             HorizontalDivider()
         }
     }
@@ -275,7 +313,7 @@ private fun NearestAlertCard(item: AheadAlert, onVote: (Int, Boolean) -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(AlertTypes.label(item.alert.type), style = MaterialTheme.typography.headlineSmall)
+            Text(AlertTypes.title(item.alert), style = MaterialTheme.typography.headlineSmall)
             Text(formatDistance(item.distanceM), fontSize = 40.sp, fontWeight = FontWeight.Bold)
             item.alert.speedLimit?.let { Text("Giới hạn $it km/h", style = MaterialTheme.typography.titleMedium) }
             Text(

@@ -35,4 +35,10 @@ object Geo {
         val diff = abs(a - b) % 360
         return if (diff > 180) 360 - diff else diff
     }
+
+    /** Huong xe nam doc truc duong (chieu nao cung duoc). Vd truc 90 (Dong-Tay): xe di 85 hay 265 deu dung. */
+    fun sameAxis(axis: Double, heading: Double, toleranceDeg: Double): Boolean {
+        val diff = angleDifference(axis, heading)
+        return diff <= toleranceDeg || diff >= 180 - toleranceDeg
+    }
 }

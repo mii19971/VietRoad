@@ -107,13 +107,95 @@ public static partial class OsmAlertMapper
         //    khong gop thi app doc "Trạm thu phí" lien tuc.
         var cameras = Deduplicate([.. byNodeId.Values, .. fromRelations], CameraMergeRadiusM, checkDirection: true);
         var tollStations = Deduplicate(tolls, TollMergeRadiusM, checkDirection: false);
-        var merged = byNodeId.Count + fromRelations.Count - cameras.Count + tolls.Count - tollStations.Count;
 
-        return new MapResult([.. cameras, .. tollStations], skipped, merged);
+        // 5. Diem nguy hiem: duong ngang duong sat, go / vach giam toc.
+        //    Direction = HUONG CON DUONG di qua diem (truc, 2 chieu nhu nhau): app chi bao khi xe
+        //    chay doc con duong do. Vd duong sat chay song song pho Le Duan, cac duong ngang nam
+        //    tren ngo cat ngang -> xe di doc Le Duan khong bi bao.
+        var axes = RoadAxes(response);
+        var crossings = new List<ImportedAlert>();
+        var bumps = new List<ImportedAlert>();
+        foreach (var n in nodes.Values)
+        {
+            var axis = axes.GetValueOrDefault(n.Id);
+            if (Tag(n, "railway") == "level_crossing")
+                crossings.Add(Hazard(n, AlertTypes.RailwayCrossing, CrossingName(n.Tags), axis));
+            else if (Tag(n, "traffic_calming") is { } calming && calming is not ("island" or "choker"))
+                bumps.Add(Hazard(n, AlertTypes.SpeedBump, calming == "rumble_strip" ? RumbleStripName : AlertTypes.DefaultName(AlertTypes.SpeedBump), axis));
+        }
+        // Duong doi (2 ray) ve 2 diem sat nhau; vach son thuong ke thanh CHUOI vai chuc met
+        // truoc nut giao -> gop lai de chi doc 1 lan.
+        var crossingPoints = Deduplicate(crossings, CrossingMergeRadiusM, checkDirection: false);
+        var bumpPoints = Deduplicate(bumps, BumpMergeRadiusM, checkDirection: false);
+
+        var merged = byNodeId.Count + fromRelations.Count - cameras.Count + tolls.Count - tollStations.Count
+                   + crossings.Count - crossingPoints.Count + bumps.Count - bumpPoints.Count;
+
+        return new MapResult([.. cameras, .. tollStations, .. crossingPoints, .. bumpPoints], skipped, merged);
     }
 
     public const double CameraMergeRadiusM = 30;
     public const double TollMergeRadiusM = 150;
+    public const double CrossingMergeRadiusM = 50;
+    public const double BumpMergeRadiusM = 100;
+
+    public const string RumbleStripName = "Vạch giảm tốc";
+    public const string UnguardedCrossingName = "Đường ngang không có rào chắn";
+
+    // Diem nguy hiem: khong dung the "name" cua OSM (thuong la ten tuyen / ly trinh, doc len kho hieu).
+    private static ImportedAlert Hazard(OsmElement n, string type, string name, double? axis) =>
+        new($"osm:node/{n.Id}", type, name, n.Lat!.Value, n.Lon!.Value, SpeedLimit: null, Direction: axis);
+
+    /// <summary>
+    /// Huong con duong (0..180 do, vi 2 chieu nhu nhau) tai tung node, tinh tu diem truoc -> diem sau
+    /// tren duong. Node nam o nga ba / nga tu (cac duong lech nhau > 30 do) -> khong co huong (null),
+    /// app bao theo moi huong cho an toan.
+    /// </summary>
+    public static Dictionary<long, double?> RoadAxes(OsmResponse response)
+    {
+        var result = new Dictionary<long, double?>();
+        foreach (var w in response.Elements.Where(e => e.Type == "way" && e.Nodes is not null && e.Geometry is not null
+                                                       && e.Nodes.Count == e.Geometry.Count && e.Nodes.Count >= 2 && Tag(e, "highway") is not null))
+        {
+            for (var i = 0; i < w.Nodes!.Count; i++)
+            {
+                var a = w.Geometry![Math.Max(i - 1, 0)];
+                var b = w.Geometry[Math.Min(i + 1, w.Nodes.Count - 1)];
+                var axis = Math.Round(Bearing(a.Lat, a.Lon, b.Lat, b.Lon) % 180);
+                var id = w.Nodes[i];
+
+                if (!result.TryGetValue(id, out var existing))
+                    result[id] = axis;
+                else if (existing is not null && AxisDiff(existing.Value, axis) > 30)
+                    result[id] = null; // giao cua 2 duong khac huong
+            }
+        }
+        return result;
+    }
+
+    private static double Bearing(double lat1, double lng1, double lat2, double lng2)
+    {
+        var dLat = lat2 - lat1;
+        var dLng = (lng2 - lng1) * Math.Cos(lat1 * Math.PI / 180);
+        var deg = Math.Atan2(dLng, dLat) * 180 / Math.PI;
+        return (deg + 360) % 360;
+    }
+
+    // Chenh lech giua 2 truc (0..90): 10 do va 170 do coi nhu cung truc (lech 20).
+    private static double AxisDiff(double a, double b)
+    {
+        var d = Math.Abs(a - b) % 180;
+        return d > 90 ? 180 - d : d;
+    }
+
+    /// <summary>
+    /// "crossing:barrier=no" -> nhan manh KHONG co rao chan (nguy hiem nhat). Khong ghi gi
+    /// thi KHONG doan la khong co (phan lon OSM chua ghi), chi goi chung "Đường ngang đường sắt".
+    /// </summary>
+    public static string CrossingName(Dictionary<string, string>? tags) =>
+        tags is not null && tags.TryGetValue("crossing:barrier", out var barrier) && barrier == "no"
+            ? UnguardedCrossingName
+            : AlertTypes.DefaultName(AlertTypes.RailwayCrossing);
 
     private static ImportedAlert Toll(string externalId, Dictionary<string, string>? tags, double lat, double lng) =>
         new(externalId, AlertTypes.TollBooth, TollName(tags), lat, lng, SpeedLimit: null, Direction: null);
@@ -140,7 +222,8 @@ public static partial class OsmAlertMapper
     public static List<ImportedAlert> Deduplicate(IEnumerable<ImportedAlert> items, double radiusM, bool checkDirection)
     {
         var ordered = items
-            .OrderByDescending(a => a.Name != AlertTypes.DefaultName(a.Type))   // co ten rieng
+            .OrderByDescending(a => a.Name != AlertTypes.DefaultName(a.Type) && a.Name != RumbleStripName) // co ten rieng
+            .ThenByDescending(a => a.Name != RumbleStripName)                  // go giam toc that uu tien hon vach son
             .ThenByDescending(a => a.SpeedLimit is not null)
             .ThenByDescending(a => a.Direction is not null)
             .ThenBy(a => a.ExternalId, StringComparer.Ordinal);

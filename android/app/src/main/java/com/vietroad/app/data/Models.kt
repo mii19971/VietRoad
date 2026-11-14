@@ -67,6 +67,22 @@ data class ReportResponse(val alert: Alert, val created: Boolean)
 @Serializable
 data class ErrorBody(val error: String? = null)
 
+// ----- Gioi han toc do theo doan duong -----
+
+/** 1 doan duong (OSM) co gioi han toc do. points = [[lat, lng], ...], theo chieu xe chay neu oneway. */
+@Serializable
+data class RoadSpeedSegment(
+    val id: Long,
+    val maxSpeed: Int,
+    val oneway: Boolean = false,
+    val name: String? = null,
+    val ref: String? = null,
+    val points: List<List<Double>>,
+)
+
+@Serializable
+data class SpeedLimitsResponse(val count: Int, val segments: List<RoadSpeedSegment>)
+
 // ----- Goi dich vu -----
 
 /** Goi hien tai: plan = "free" | "premium"; features = tinh nang duoc dung (vd "navigation"). */
@@ -123,6 +139,8 @@ object AlertTypes {
     const val POLICE_CHECKPOINT = "police_checkpoint"
     const val TRAFFIC_CAMERA = "traffic_camera"   // camera giam sat (phat nguoi), tu OSM
     const val TOLL_BOOTH = "toll_booth"           // tram thu phi, tu OSM
+    const val RAILWAY_CROSSING = "railway_crossing" // duong ngang duong sat, tu OSM
+    const val SPEED_BUMP = "speed_bump"           // go / vach giam toc, tu OSM
 
     fun label(type: String): String = when (type) {
         SPEED_CAMERA -> "Camera tốc độ"
@@ -131,6 +149,25 @@ object AlertTypes {
         POLICE_CHECKPOINT -> "Chốt CSGT"
         TRAFFIC_CAMERA -> "Camera giám sát"
         TOLL_BOOTH -> "Trạm thu phí"
+        RAILWAY_CROSSING -> "Đường ngang đường sắt"
+        SPEED_BUMP -> "Gờ giảm tốc"
         else -> type
     }
+
+    /**
+     * Ten hien thi / doc cho 1 canh bao. Diem nguy hiem dung ten server dat (vd "Đường ngang
+     * không có rào chắn", "Vạch giảm tốc") vi chi tiet hon ten loai; camera thi dung ten loai.
+     */
+    fun title(alert: Alert): String =
+        if (alert.type == RAILWAY_CROSSING || alert.type == SPEED_BUMP) alert.name.ifBlank { label(alert.type) }
+        else label(alert.type)
+
+    /**
+     * Diem nguy hiem NAM TREN 1 con duong: direction = huong con duong (truc, 0..180, 2 chieu nhu nhau),
+     * khong phai huong camera. App chi bao khi xe chay doc con duong do.
+     */
+    fun hasRoadAxis(type: String): Boolean = type == RAILWAY_CROSSING || type == SPEED_BUMP
+
+    /** Loai "nho": chi doc 1 lan khi da gan (doc tu xa moi go giam toc thi qua on). */
+    fun announceOnlyWhenNear(type: String): Boolean = type == SPEED_BUMP
 }

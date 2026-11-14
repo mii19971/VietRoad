@@ -97,4 +97,43 @@ class AlertLogicTest {
         val back = listOf(AheadAlert(cam, 480))
         policy.forgetPassed(back); assertNull(policy.next(back.first()))
     }
+
+    @Test
+    fun speedBump_announcedOnlyWhenNear_withServerName() {
+        val bump = Alert(id = 9, type = "speed_bump", lat = carLat, lng = carLng, name = "Vạch giảm tốc", source = "osm")
+        val policy = AnnouncementPolicy()
+        assertNull(policy.next(AheadAlert(bump, 400)))                       // xa: khong doc
+        assertEquals("Sắp tới Vạch giảm tốc", policy.next(AheadAlert(bump, 140)))
+        assertNull(policy.next(AheadAlert(bump, 100)))                       // khong doc lai
+    }
+
+    @Test
+    fun railwayCrossing_announcedFarAndNear() {
+        val crossing = Alert(id = 8, type = "railway_crossing", lat = carLat, lng = carLng,
+            name = "Đường ngang không có rào chắn", source = "osm")
+        val policy = AnnouncementPolicy()
+        assertEquals("Phía trước 400 mét có Đường ngang không có rào chắn", policy.next(AheadAlert(crossing, 410)))
+        assertEquals("Sắp tới Đường ngang không có rào chắn", policy.next(AheadAlert(crossing, 140)))
+    }
+
+    @Test
+    fun bumpNearer_doesNotHideCameraFurtherAhead() {
+        val bump = AheadAlert(Alert(id = 9, type = "speed_bump", lat = 0.0, lng = 0.0, name = "Gờ giảm tốc", source = "osm"), 300)
+        val cam = AheadAlert(alert(1, 0.0, 0.0), 450)
+        val policy = AnnouncementPolicy()
+        assertEquals("Phía trước 450 mét có Camera tốc độ", policy.next(listOf(bump, cam)))
+        assertNull(policy.next(listOf(bump, cam)))
+    }
+
+    @Test
+    fun railwayCrossing_onSideStreet_ignoredWhenDrivingParallel() {
+        // Duong ngang ~200 m phia Bac, nam tren ngo chay Dong - Tay (truc 90).
+        val crossing = Alert(id = 7, type = "railway_crossing", lat = carLat + 0.0018, lng = carLng + 0.0002,
+            name = "Đường ngang đường sắt", source = "osm", direction = 90.0)
+        // Xe di huong Bac doc pho (song song duong sat) -> khong bao, ke ca khi di sat ben canh.
+        assertTrue(AlertLogic.ahead(listOf(crossing), carLat, carLng, heading = 0.0).isEmpty())
+        assertTrue(AlertLogic.ahead(listOf(crossing), carLat + 0.0018, carLng, heading = 0.0).isEmpty())
+        // Xe re vao ngo, di huong Tay (270) ve phia duong ngang -> bao (chieu nao cung duoc).
+        assertEquals(1, AlertLogic.ahead(listOf(crossing), carLat + 0.0018, carLng + 0.0012, heading = 270.0).size)
+    }
 }

@@ -94,6 +94,10 @@ builder.Services.AddHttpClient<IPlaceSearch, NominatimPlaceSearch>((sp, http) =>
     http.Timeout = TimeSpan.FromSeconds(10);
 });
 
+// Nen JSON tra ve (gzip / brotli) neu app chap nhan: du lieu gioi han toc do quanh xe co the
+// ~200 KB, nen con ~30 KB -> tiet kiem 4G cho tai xe. OkHttp (app Android) tu giai nen.
+builder.Services.AddResponseCompression(o => o.EnableForHttps = true);
+
 // Tra loi theo chuan ProblemDetails khi co loi bat ngo.
 builder.Services.AddProblemDetails();
 
@@ -131,6 +135,7 @@ app.UseExceptionHandler(new ExceptionHandlerOptions
         : StatusCodes.Status500InternalServerError,
 });
 
+app.UseResponseCompression();
 app.UseAuthentication(); // doc token -> biet user la ai
 app.UseAuthorization();  // chan endpoint RequireAuthorization neu chua dang nhap
 
@@ -149,6 +154,7 @@ app.MapReportEndpoints();
 app.MapAdminEndpoints();
 app.MapRoutingEndpoints();
 app.MapSubscriptionEndpoints();
+app.MapSpeedLimitEndpoints();
 
 // ===== 3. Chay server =====
 app.Run();

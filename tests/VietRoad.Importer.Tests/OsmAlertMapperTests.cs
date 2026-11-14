@@ -162,6 +162,38 @@ public class OsmAlertMapperTests
         Assert.Equal(60, result.Alerts.Single(a => a.Lat < 10.96).SpeedLimit);
     }
 
+    // ---------- Gioi han toc do duong ----------
+
+    private static OsmElement Way(long id, Dictionary<string, string> tags, params (double Lat, double Lon)[] pts) =>
+        new("way", id, null, null, tags, null, null, [.. pts.Select(p => new OsmCenter(p.Lat, p.Lon))]);
+
+    [Fact]
+    public void SpeedLimits_ParseOnewayAndSkipNonNumeric()
+    {
+        var osm = new OsmResponse([
+            Way(1, new() { ["highway"] = "trunk", ["maxspeed"] = "80", ["ref"] = "QL1A" }, (21, 105), (21.001, 105)),
+            Way(2, new() { ["highway"] = "motorway", ["maxspeed"] = "120" }, (21, 106), (21.01, 106)),             // cao toc: mac dinh 1 chieu
+            Way(3, new() { ["highway"] = "primary", ["maxspeed"] = "60", ["oneway"] = "-1" }, (20, 105), (20.001, 105.0002)),
+            Way(4, new() { ["highway"] = "primary", ["maxspeed"] = "VN:urban" }, (20, 105), (20.1, 105)),         // khong phai so: bo
+            Way(5, new() { ["highway"] = "primary", ["maxspeed"] = "50" }, (20, 105)),                            // 1 diem: bo
+        ]);
+
+        var (roads, skipped) = SpeedLimitMapper.Map(osm);
+
+        Assert.Equal(2, skipped);
+        Assert.Equal(3, roads.Count);
+        Assert.False(roads.Single(r => r.Id == 1).Oneway);
+        Assert.Equal("QL1A", roads.Single(r => r.Id == 1).Ref);
+        Assert.True(roads.Single(r => r.Id == 2).Oneway);
+        var reversed = roads.Single(r => r.Id == 3);
+        Assert.True(reversed.Oneway);
+        Assert.Equal((20.001, 105.0002), reversed.Points[0]);        // oneway=-1: dao lai theo chieu xe chay
+    }
+
+    [Fact]
+    public void SpeedLimits_PointsJson() =>
+        Assert.Equal("[[21.0285,105.8542],[21.03,105.86]]", SpeedLimitMapper.PointsJson([(21.0285, 105.8542), (21.03, 105.86)]));
+
     [Theory]
     [InlineData("IC11", "Trạm thu phí IC11")]
     [InlineData("Hầm Cù Mông", "Trạm thu phí Hầm Cù Mông")]
@@ -181,5 +213,61 @@ public class OsmAlertMapperTests
         var a = OsmAlertMapper.Deduplicate(items, 150, false).Single().ExternalId;
         var b = OsmAlertMapper.Deduplicate(items.Reverse(), 150, false).Single().ExternalId;
         Assert.Equal(a, b); // chay lai import khong doi dai dien -> khong them / an lung tung
+    }
+
+    [Fact]
+    public void RailwayCrossings_DoubleTrackMerged_UnguardedNamed()
+    {
+        var osm = new OsmResponse([
+            Node(1, 21.00000, 105.80000, new() { ["railway"] = "level_crossing" }),
+            Node(2, 21.00010, 105.80000, new() { ["railway"] = "level_crossing", ["crossing:barrier"] = "no", ["name"] = "Km 12+300" }), // ray thu 2, ~11 m
+            Node(3, 21.10000, 105.80000, new() { ["railway"] = "level_crossing", ["crossing:barrier"] = "full" }),
+        ]);
+
+        var result = OsmAlertMapper.Map(osm);
+        Assert.Equal(2, result.Alerts.Count);
+        Assert.Equal(1, result.Merged);
+        Assert.All(result.Alerts, a => Assert.Equal(AlertTypes.RailwayCrossing, a.Type));
+        // Diem gop giu ten "khong co rao chan" (thong tin quan trong hon), khong dung ten OSM "Km 12+300".
+        Assert.Equal("Đường ngang không có rào chắn", result.Alerts.Single(a => a.Lat < 21.05).Name);
+        Assert.Equal("Đường ngang đường sắt", result.Alerts.Single(a => a.Lat > 21.05).Name);
+    }
+
+    [Fact]
+    public void SpeedBumps_RumbleStripSeriesMerged_IslandIgnored()
+    {
+        var osm = new OsmResponse([
+            // Chuoi 4 vach son cach nhau ~20 m truoc nut giao + 1 go giam toc that o giua.
+            Node(1, 21.00000, 105.80000, new() { ["traffic_calming"] = "rumble_strip" }),
+            Node(2, 21.00018, 105.80000, new() { ["traffic_calming"] = "rumble_strip" }),
+            Node(3, 21.00036, 105.80000, new() { ["traffic_calming"] = "bump" }),
+            Node(4, 21.00054, 105.80000, new() { ["traffic_calming"] = "rumble_strip" }),
+            Node(5, 21.02000, 105.80000, new() { ["traffic_calming"] = "rumble_strip" }),
+            Node(6, 21.04000, 105.80000, new() { ["traffic_calming"] = "island" }),   // dao giao thong: khong phai go
+        ]);
+
+        var alerts = OsmAlertMapper.Map(osm).Alerts;
+        Assert.Equal(2, alerts.Count);
+        Assert.All(alerts, a => Assert.Equal(AlertTypes.SpeedBump, a.Type));
+        Assert.Equal("Gờ giảm tốc", alerts.Single(a => a.Lat < 21.01).Name);    // go that duoc chon dai dien
+        Assert.Equal("Vạch giảm tốc", alerts.Single(a => a.Lat > 21.01).Name);
+    }
+
+    [Fact]
+    public void Hazard_GetsRoadAxis_NullAtJunction()
+    {
+        // Ngo chay Dong - Tay qua duong ngang (node 1); node 2 la nga tu cua 2 duong vuong goc.
+        var osm = new OsmResponse([
+            Node(1, 21.0, 105.8001, new() { ["railway"] = "level_crossing" }),
+            Node(2, 21.0, 105.8002, new() { ["traffic_calming"] = "bump" }),
+            new OsmElement("way", 10, null, null, new() { ["highway"] = "residential" }, null,
+                Geometry: [new(21.0, 105.8), new(21.0, 105.8001), new(21.0, 105.8002)], Nodes: [100, 1, 2]),
+            new OsmElement("way", 11, null, null, new() { ["highway"] = "residential" }, null,
+                Geometry: [new(20.999, 105.8002), new(21.0, 105.8002), new(21.001, 105.8002)], Nodes: [200, 2, 201]),
+        ]);
+
+        var alerts = OsmAlertMapper.Map(osm).Alerts;
+        Assert.Equal(90, alerts.Single(a => a.Type == AlertTypes.RailwayCrossing).Direction);
+        Assert.Null(alerts.Single(a => a.Type == AlertTypes.SpeedBump).Direction);
     }
 }

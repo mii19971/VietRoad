@@ -6,6 +6,7 @@ import android.location.LocationManager
 import android.os.SystemClock
 import com.vietroad.app.data.Alert
 import com.vietroad.app.data.ApiClient
+import com.vietroad.app.data.RoadSpeedSegment
 import com.vietroad.app.data.RouteResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +37,8 @@ data class DriveState(
     val nearby: List<Alert> = emptyList(),  // moi canh bao trong 3 km (ve len ban do)
     val online: Boolean = true,
     val nav: NavState? = null,   // null = khong chi duong
+    val speedLimit: Int? = null, // gioi han toc do hien tai (km/h), null = khong biet
+    val overspeed: Boolean = false,
 )
 
 /** Trang thai chi duong cho man hinh / thong bao. */
@@ -94,6 +97,11 @@ class DriveEngine(context: Context, private val api: ApiClient) {
 
     // Bo nho dem canh bao quanh xe, tai lai khi xe di xa hoac sau 1 phut.
     private var nearby: List<Alert> = emptyList()
+
+    // Gioi han toc do: cac doan duong quanh xe (tai cung luc voi canh bao) + bo tim doan + bo canh bao.
+    private var roads: List<RoadSpeedSegment> = emptyList()
+    private val speedMatcher = SpeedLimitMatcher()
+    private var overspeedPolicy = OverspeedPolicy()
     private var lastFetchAt = 0L
     private var lastFetchLat: Double? = null
     private var lastFetchLng: Double? = null
@@ -130,6 +138,9 @@ class DriveEngine(context: Context, private val api: ApiClient) {
         announcer?.shutdown()
         announcer = null
         nearby = emptyList()
+        roads = emptyList()
+        speedMatcher.reset()
+        overspeedPolicy = OverspeedPolicy()
         lastFetchAt = 0
         lastFetchLat = null
         lastFetchLng = null
@@ -267,9 +278,26 @@ class DriveEngine(context: Context, private val api: ApiClient) {
     private fun updateAhead(position: Position) {
         val ahead = AlertLogic.ahead(nearby, position.lat, position.lng, position.heading)
         policy.forgetPassed(ahead)
-        policy.next(ahead.firstOrNull())?.let { announcer?.speak(it) }
+        policy.next(ahead)?.let { announcer?.speak(it) }
 
-        _state.update { it.copy(position = position, ahead = ahead, nearbyCount = nearby.size, nearby = nearby) }
+        val limit = currentSpeedLimit(position, ahead)
+        overspeedPolicy.next(position.speedKmh, limit, SystemClock.elapsedRealtime())?.let { announcer?.speak(it) }
+
+        _state.update {
+            it.copy(position = position, ahead = ahead, nearbyCount = nearby.size, nearby = nearby,
+                speedLimit = limit, overspeed = overspeedPolicy.isOver(position.speedKmh, limit))
+        }
+    }
+
+    /**
+     * Gioi han toc do luc nay:
+     *  - Sap toi (< 150 m) camera co ghi gioi han -> dung gioi han cua camera (cai bi phat that).
+     *  - Khong thi: gioi han cua doan duong xe dang di (OSM).
+     */
+    private fun currentSpeedLimit(position: Position, ahead: List<AheadAlert>): Int? {
+        val camera = ahead.firstOrNull { it.distanceM <= CAMERA_LIMIT_RANGE_M && it.alert.speedLimit != null }
+        camera?.alert?.speedLimit?.let { return it }
+        return speedMatcher.match(roads, position.lat, position.lng, position.heading)?.maxSpeed
     }
 
     /** Tai lai canh bao khi da di xa >1 km so voi lan tai truoc, hoac sau 60 giay. */
@@ -289,6 +317,15 @@ class DriveEngine(context: Context, private val api: ApiClient) {
                 lastFetchLat = position.lat
                 lastFetchLng = position.lng
                 _state.update { it.copy(online = true) }
+
+                // Gioi han toc do cac doan duong quanh xe. Loi thi giu du lieu cu, khong anh huong canh bao.
+                try {
+                    roads = api.speedLimits(position.lat, position.lng, ROAD_FETCH_RADIUS_M).segments
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // bo qua
+                }
                 // Tinh lai ngay voi du lieu moi, khong cho lan GPS tiep theo (xe dung yen thi GPS it gui).
                 updateAhead(_state.value.position ?: position)
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -307,5 +344,7 @@ class DriveEngine(context: Context, private val api: ApiClient) {
         const val REFETCH_DISTANCE_M = 1000.0
         const val REFETCH_INTERVAL_MS = 60_000L
         const val REROUTE_INTERVAL_MS = 15_000L
+        const val ROAD_FETCH_RADIUS_M = 2000
+        const val CAMERA_LIMIT_RANGE_M = 150
     }
 }

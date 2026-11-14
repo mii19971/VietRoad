@@ -44,7 +44,7 @@ public class AlertImportService(VietRoadDbContext db, TimeProvider time)
     public static readonly string[] ImportableTypes =
     [
         AlertTypes.SpeedCamera, AlertTypes.RedLightCamera, AlertTypes.AverageSpeedCamera,
-        AlertTypes.TrafficCamera, AlertTypes.TollBooth,
+        AlertTypes.TrafficCamera, AlertTypes.TollBooth, AlertTypes.RailwayCrossing, AlertTypes.SpeedBump,
     ];
 
     public async Task<AlertImportResult> ImportAsync(
@@ -232,6 +232,8 @@ public class AlertImportService(VietRoadDbContext db, TimeProvider time)
         "cameratocdotrungbinh" or "tocdotrungbinh" or "averagespeedcamera" or "averagespeed" => AlertTypes.AverageSpeedCamera,
         "cameragiamsat" or "giamsat" or "cameraphatnguoi" or "phatnguoi" or "trafficcamera" => AlertTypes.TrafficCamera,
         "tramthuphi" or "thuphi" or "tollbooth" or "bot" => AlertTypes.TollBooth,
+        "duongngangduongsat" or "duongngang" or "giaocatduongsat" or "railwaycrossing" or "levelcrossing" => AlertTypes.RailwayCrossing,
+        "gogiamtoc" or "vachgiamtoc" or "giamtoc" or "speedbump" => AlertTypes.SpeedBump,
         _ => null,
     };
 

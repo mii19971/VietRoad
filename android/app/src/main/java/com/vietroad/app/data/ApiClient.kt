@@ -55,6 +55,10 @@ class ApiClient(private val baseUrl: String, private val session: SessionStore) 
         // Gui kem token (neu da dang nhap): goi Premium moi nhan duoc chot CSGT.
         get("api/v1/alerts/nearby?lat=$lat&lng=$lng&radius=$radiusM", auth = session.accessToken != null)
 
+    /** Cac doan duong co gioi han toc do quanh xe (khong can dang nhap). */
+    suspend fun speedLimits(lat: Double, lng: Double, radiusM: Int): SpeedLimitsResponse =
+        get("api/v1/speed-limits/nearby?lat=$lat&lng=$lng&radius=$radiusM")
+
     // ----- Goi dich vu -----
 
     suspend fun subscription(): SubscriptionInfo = get("api/v1/users/me/subscription", auth = true)

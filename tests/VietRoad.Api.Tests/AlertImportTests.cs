@@ -35,6 +35,8 @@ public class AlertImportParseTests
     [InlineData("Đèn đỏ", AlertTypes.RedLightCamera)]
     [InlineData("Camera phạt nguội", AlertTypes.TrafficCamera)]
     [InlineData("Trạm thu phí", AlertTypes.TollBooth)]
+    [InlineData("Đường ngang", AlertTypes.RailwayCrossing)]
+    [InlineData("Gờ giảm tốc", AlertTypes.SpeedBump)]
     [InlineData("speed_camera", AlertTypes.SpeedCamera)]
     [InlineData("Chốt CSGT", null)]   // khong nhap chot CSGT tu file
     public void TypeOf(string value, string? expected) => Assert.Equal(expected, AlertImportService.TypeOf(value));

@@ -14,7 +14,9 @@ public record OsmElement(
     double? Lon,
     Dictionary<string, string>? Tags,     // cac cap key=value mo ta doi tuong
     List<OsmMember>? Members,             // chi relation moi co thanh vien
-    OsmCenter? Center = null);            // way hoi bang "out center": diem giua cua way
+    OsmCenter? Center = null,             // way hoi bang "out center": diem giua cua way
+    List<OsmCenter>? Geometry = null,     // way hoi bang "out geom": toa do tung diem cua way
+    List<long>? Nodes = null);            // way hoi bang "out body": id cac node (cung thu tu voi Geometry)
 
 /// <summary>Diem giua cua 1 way (vd tram thu phi ve thanh 1 vung / 1 duong ke ngang).</summary>
 public record OsmCenter(double Lat, double Lon);

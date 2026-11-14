@@ -69,6 +69,14 @@ public static class AlertTypes
     /// <summary>Tram thu phi. Chi tu OSM (nguoi dung khong bao cao).</summary>
     public const string TollBooth = "toll_booth";
 
+    // 2 loai duoi: Direction la HUONG CON DUONG (truc 2 chieu, 0..180), khong phai huong camera.
+
+    /// <summary>Duong ngang (duong bo cat duong sat). Chi tu OSM / admin.</summary>
+    public const string RailwayCrossing = "railway_crossing";
+
+    /// <summary>Go giam toc / vach son giam toc. Chi tu OSM / admin.</summary>
+    public const string SpeedBump = "speed_bump";
+
     /// <summary>Cac loai nguoi dung duoc phep bao cao.</summary>
     public static readonly IReadOnlySet<string> UserReportable =
         new HashSet<string> { SpeedCamera, RedLightCamera, AverageSpeedCamera, PoliceCheckpoint };
@@ -84,6 +92,8 @@ public static class AlertTypes
         PoliceCheckpoint => "Chốt CSGT",
         TrafficCamera => "Camera giám sát giao thông",
         TollBooth => "Trạm thu phí",
+        RailwayCrossing => "Đường ngang đường sắt",
+        SpeedBump => "Gờ giảm tốc",
         _ => "Camera tốc độ",
     };
 }

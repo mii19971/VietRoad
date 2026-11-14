@@ -260,6 +260,8 @@ class MapController(context: Context) {
                 Expression.stop(AlertTypes.POLICE_CHECKPOINT, Expression.color(Color.parseColor("#1565C0"))),
                 Expression.stop(AlertTypes.TRAFFIC_CAMERA, Expression.color(Color.parseColor("#7B1FA2"))),
                 Expression.stop(AlertTypes.TOLL_BOOTH, Expression.color(Color.parseColor("#2E7D32"))),
+                Expression.stop(AlertTypes.RAILWAY_CROSSING, Expression.color(Color.parseColor("#212121"))),
+                Expression.stop(AlertTypes.SPEED_BUMP, Expression.color(Color.parseColor("#F9A825"))),
             )),
             PropertyFactory.circleStrokeColor("#FFFFFF"), PropertyFactory.circleStrokeWidth(2f),
         ))

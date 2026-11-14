@@ -35,6 +35,8 @@ data class UiState(
     val ahead: List<AheadAlert> = emptyList(),
     val nearbyCount: Int = 0,
     val nearby: List<Alert> = emptyList(),
+    val speedLimit: Int? = null,
+    val overspeed: Boolean = false,
     val online: Boolean = true,
     val nav: NavState? = null,
     // Man hinh tim diem den (null = dang o man hinh lai xe).
@@ -77,7 +79,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             engine.state.collect { d ->
                 _state.update {
                     it.copy(tracking = d.tracking, position = d.position, ahead = d.ahead,
-                        nearbyCount = d.nearbyCount, nearby = d.nearby, online = d.online, nav = d.nav)
+                        nearbyCount = d.nearbyCount, nearby = d.nearby, online = d.online, nav = d.nav,
+                        speedLimit = d.speedLimit, overspeed = d.overspeed)
                 }
             }
         }
