@@ -53,7 +53,11 @@ public record ApiResult<T>(T? Value, string? Error)
 
 public static class Labels
 {
+    /// <summary>Loai admin tao / sua duoc (giong loai nguoi dung bao cao).</summary>
     public static readonly string[] AlertTypes = ["speed_camera", "red_light_camera", "average_speed_camera", "police_checkpoint"];
+
+    /// <summary>Moi loai (de loc danh sach): them cac loai chi den tu OSM.</summary>
+    public static readonly string[] AllAlertTypes = [.. AlertTypes, "traffic_camera", "toll_booth"];
 
     public static string Type(string type) => type switch
     {
@@ -61,6 +65,8 @@ public static class Labels
         "red_light_camera" => "Camera đèn đỏ",
         "average_speed_camera" => "Camera tốc độ TB",
         "police_checkpoint" => "Chốt CSGT",
+        "traffic_camera" => "Camera giám sát",
+        "toll_booth" => "Trạm thu phí",
         _ => type,
     };
 

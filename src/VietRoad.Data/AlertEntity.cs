@@ -63,6 +63,12 @@ public static class AlertTypes
     public const string AverageSpeedCamera = "average_speed_camera";
     public const string PoliceCheckpoint = "police_checkpoint";
 
+    /// <summary>Camera giam sat giao thong (phat nguoi...) khong ro la toc do hay den do. Chi tu OSM.</summary>
+    public const string TrafficCamera = "traffic_camera";
+
+    /// <summary>Tram thu phi. Chi tu OSM (nguoi dung khong bao cao).</summary>
+    public const string TollBooth = "toll_booth";
+
     /// <summary>Cac loai nguoi dung duoc phep bao cao.</summary>
     public static readonly IReadOnlySet<string> UserReportable =
         new HashSet<string> { SpeedCamera, RedLightCamera, AverageSpeedCamera, PoliceCheckpoint };
@@ -76,6 +82,8 @@ public static class AlertTypes
         RedLightCamera => "Camera đèn đỏ",
         AverageSpeedCamera => "Camera tốc độ trung bình",
         PoliceCheckpoint => "Chốt CSGT",
+        TrafficCamera => "Camera giám sát giao thông",
+        TollBooth => "Trạm thu phí",
         _ => "Camera tốc độ",
     };
 }

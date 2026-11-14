@@ -4,7 +4,8 @@ using VietRoad.Data;
 
 namespace VietRoad.Importer.Osm;
 
-public record MapResult(IReadOnlyList<ImportedAlert> Alerts, int Skipped);
+/// <param name="Merged">So diem bi gop vao diem khac (trung lap: nhieu lan xe cua 1 tram thu phi, camera ve 2 lan...).</param>
+public record MapResult(IReadOnlyList<ImportedAlert> Alerts, int Skipped, int Merged = 0);
 
 /// <summary>
 /// Chuyen du lieu OSM sang ImportedAlert. Chi xu ly du lieu, khong goi mang hay database,
@@ -35,6 +36,20 @@ public static partial class OsmAlertMapper
                 Lng: n.Lon!.Value,
                 SpeedLimit: ParseMaxSpeed(Tag(n, "maxspeed")),
                 Direction: ParseDirection(Tag(n, "direction") ?? Tag(n, "camera:direction")));
+        }
+
+        // 1b. Camera giam sat giao thong (phat nguoi, doc bien so...) chua duoc gan la camera toc do.
+        foreach (var n in nodes.Values.Where(n => IsTrafficSurveillance(n) && !byNodeId.ContainsKey(n.Id)))
+        {
+            byNodeId[n.Id] = new ImportedAlert(
+                ExternalId: $"osm:node/{n.Id}",
+                Type: AlertTypes.TrafficCamera,
+                // Khong dung the "name": voi camera giam sat no thuong la ten noi dat (vd "School").
+                Name: AlertTypes.DefaultName(AlertTypes.TrafficCamera),
+                Lat: n.Lat!.Value,
+                Lng: n.Lon!.Value,
+                SpeedLimit: null,
+                Direction: ParseDirection(Tag(n, "camera:direction") ?? Tag(n, "direction")));
         }
 
         // 2. Cac relation type=enforcement (vung kiem soat).
@@ -79,7 +94,89 @@ public static partial class OsmAlertMapper
                 Direction: direction));
         }
 
-        return new MapResult([.. byNodeId.Values, .. fromRelations], skipped);
+        // 3. Tram thu phi: dang diem (node) va dang vung / duong ke (way, lay diem giua).
+        var tolls = new List<ImportedAlert>();
+        foreach (var n in nodes.Values.Where(n => Tag(n, "barrier") == "toll_booth"))
+            tolls.Add(Toll($"osm:node/{n.Id}", n.Tags, n.Lat!.Value, n.Lon!.Value));
+        foreach (var w in response.Elements.Where(e => e.Type == "way" && e.Center is not null && Tag(e, "barrier") == "toll_booth"))
+            tolls.Add(Toll($"osm:way/{w.Id}", w.Tags, w.Center!.Lat, w.Center.Lon));
+
+        // 4. Gop diem trung.
+        //  - Camera cung loai, cung huong, cach nhau < 30 m: thuong la 1 camera bi ve 2 lan.
+        //  - Tram thu phi < 150 m: OSM hay ve MOI LAN XE 1 diem -> 1 tram co the 5-10 diem,
+        //    khong gop thi app doc "Trạm thu phí" lien tuc.
+        var cameras = Deduplicate([.. byNodeId.Values, .. fromRelations], CameraMergeRadiusM, checkDirection: true);
+        var tollStations = Deduplicate(tolls, TollMergeRadiusM, checkDirection: false);
+        var merged = byNodeId.Count + fromRelations.Count - cameras.Count + tolls.Count - tollStations.Count;
+
+        return new MapResult([.. cameras, .. tollStations], skipped, merged);
+    }
+
+    public const double CameraMergeRadiusM = 30;
+    public const double TollMergeRadiusM = 150;
+
+    private static ImportedAlert Toll(string externalId, Dictionary<string, string>? tags, double lat, double lng) =>
+        new(externalId, AlertTypes.TollBooth, TollName(tags), lat, lng, SpeedLimit: null, Direction: null);
+
+    /// <summary>
+    /// Ten tram thu phi tren OSM nhieu khi chi la ten nut giao / cong trinh ("IC11", "Hầm Cù Mông")
+    /// -> them tien to cho de hieu: "Trạm thu phí IC11". Ten da co "thu phí" thi giu nguyen.
+    /// </summary>
+    public static string TollName(Dictionary<string, string>? tags)
+    {
+        var name = NameOf(tags, AlertTypes.TollBooth);
+        return name.Contains("thu phí", StringComparison.OrdinalIgnoreCase) ? name : $"Trạm thu phí {name}";
+    }
+
+    private static bool IsTrafficSurveillance(OsmElement n) =>
+        Tag(n, "man_made") == "surveillance" &&
+        (Tag(n, "surveillance:zone") == "traffic" || Tag(n, "surveillance") == "traffic" || Tag(n, "surveillance:type") == "ALPR");
+
+    /// <summary>
+    /// Gop cac diem cung loai nam gan nhau. Diem "dai dien" duoc chon theo thu tu co dinh
+    /// (nhieu thong tin nhat, roi theo ExternalId) -> chay import nhieu lan van ra cung ExternalId,
+    /// khong tao / an di lung tung. Diem bi gop chi bo sung thong tin con thieu cho diem dai dien.
+    /// </summary>
+    public static List<ImportedAlert> Deduplicate(IEnumerable<ImportedAlert> items, double radiusM, bool checkDirection)
+    {
+        var ordered = items
+            .OrderByDescending(a => a.Name != AlertTypes.DefaultName(a.Type))   // co ten rieng
+            .ThenByDescending(a => a.SpeedLimit is not null)
+            .ThenByDescending(a => a.Direction is not null)
+            .ThenBy(a => a.ExternalId, StringComparer.Ordinal);
+
+        var kept = new List<ImportedAlert>();
+        foreach (var a in ordered)
+        {
+            var i = kept.FindIndex(k =>
+                k.Type == a.Type &&
+                DistanceM(k.Lat, k.Lng, a.Lat, a.Lng) < radiusM &&
+                (!checkDirection || k.Direction is null || a.Direction is null || AngleDiff(k.Direction.Value, a.Direction.Value) <= 45));
+
+            if (i < 0)
+                kept.Add(a);
+            else
+                kept[i] = kept[i] with
+                {
+                    SpeedLimit = kept[i].SpeedLimit ?? a.SpeedLimit,
+                    Direction = kept[i].Direction ?? a.Direction,
+                };
+        }
+        return kept;
+    }
+
+    // Khoang cach gan dung (met) - du chinh xac cho vai tram met.
+    private static double DistanceM(double lat1, double lng1, double lat2, double lng2)
+    {
+        var dLat = (lat2 - lat1) * 110_574;
+        var dLng = (lng2 - lng1) * 111_320 * Math.Cos(lat1 * Math.PI / 180);
+        return Math.Sqrt(dLat * dLat + dLng * dLng);
+    }
+
+    private static double AngleDiff(double a, double b)
+    {
+        var d = Math.Abs(a - b) % 360;
+        return d > 180 ? 360 - d : d;
     }
 
     private static string? Tag(OsmElement e, string key) =>

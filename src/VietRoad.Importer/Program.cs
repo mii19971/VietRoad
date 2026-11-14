@@ -51,7 +51,7 @@ var osm = await new OverpassClient(http).FetchVietnamCamerasAsync(overpassEndpoi
 
 // ===== 3. Chuyen sang dang cua VietRoad =====
 var result = OsmAlertMapper.Map(osm);
-Console.WriteLine($"OSM: {osm.Elements.Count} phan tu -> {result.Alerts.Count} canh bao, bo qua {result.Skipped}.");
+Console.WriteLine($"OSM: {osm.Elements.Count} phan tu -> {result.Alerts.Count} canh bao, bo qua {result.Skipped}, gop trung {result.Merged}.");
 
 foreach (var group in result.Alerts.GroupBy(a => a.Type))
     Console.WriteLine($"  {group.Key,-22} {group.Count()}");

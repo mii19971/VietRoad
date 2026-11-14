@@ -121,12 +121,16 @@ object AlertTypes {
     const val RED_LIGHT_CAMERA = "red_light_camera"
     const val AVERAGE_SPEED_CAMERA = "average_speed_camera"
     const val POLICE_CHECKPOINT = "police_checkpoint"
+    const val TRAFFIC_CAMERA = "traffic_camera"   // camera giam sat (phat nguoi), tu OSM
+    const val TOLL_BOOTH = "toll_booth"           // tram thu phi, tu OSM
 
     fun label(type: String): String = when (type) {
         SPEED_CAMERA -> "Camera tốc độ"
         RED_LIGHT_CAMERA -> "Camera đèn đỏ"
         AVERAGE_SPEED_CAMERA -> "Camera tốc độ trung bình"
         POLICE_CHECKPOINT -> "Chốt CSGT"
+        TRAFFIC_CAMERA -> "Camera giám sát"
+        TOLL_BOOTH -> "Trạm thu phí"
         else -> type
     }
 }

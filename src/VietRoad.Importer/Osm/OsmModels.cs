@@ -13,7 +13,11 @@ public record OsmElement(
     double? Lat,                          // chi node moi co toa do
     double? Lon,
     Dictionary<string, string>? Tags,     // cac cap key=value mo ta doi tuong
-    List<OsmMember>? Members);            // chi relation moi co thanh vien
+    List<OsmMember>? Members,             // chi relation moi co thanh vien
+    OsmCenter? Center = null);            // way hoi bang "out center": diem giua cua way
+
+/// <summary>Diem giua cua 1 way (vd tram thu phi ve thanh 1 vung / 1 duong ke ngang).</summary>
+public record OsmCenter(double Lat, double Lon);
 
 /// <summary>Thanh vien cua 1 relation, vd camera (role "device") cua 1 vung kiem soat toc do.</summary>
 public record OsmMember(string Type, long Ref, string Role);
